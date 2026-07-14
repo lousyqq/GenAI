@@ -1,0 +1,39 @@
+# ===== EQDashboard.V2.Web .gitignore =====
+# 本檔位於 canonical 巢狀 repo (EQDashboard.V2.Web/.git) 的根目錄。
+
+# --- Build 產物 ---
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+
+# --- Visual Studio / IDE 暫存 ---
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# --- 執行期輸出 ---
+logs/
+*.log
+
+# --- 機敏資料：絕不可進版控 ---
+# Data Protection 金鑰（可解密/偽造 auth cookie 與 antiforgery token）
+App_Data/
+
+# 主設定檔含開發 DB 明碼密碼 —— 改以 appsettings.json.example 當範本，
+# 真實值由本機 appsettings.json / 環境變數 / user-secrets 提供。
+appsettings.json
+
+# --- Node 套件（puppeteer 等本機測試工具，非執行期相依，不入版控）---
+node_modules/
+
+# --- 暫時 / 拋棄式腳本 ---
+scratch/
+
+# --- 上傳的動態內容（看板圖示等，不入版控）---
+wwwroot/images/icons/
+
+# --- OS 雜項 ---
+Thumbs.db
+.DS_Store

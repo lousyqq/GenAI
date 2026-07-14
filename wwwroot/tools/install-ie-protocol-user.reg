@@ -1,0 +1,25 @@
+Windows Registry Editor Version 5.00
+
+; ============================================================================
+; EQ Dashboard - "ie:" custom protocol handler (免系統管理員權限 / 一般員工版)
+; ----------------------------------------------------------------------------
+; Purpose : 供企業內部無系統管理員 (Admin) 權限的一般帳號使用。
+;           改為寫入當前使用者的 HKCU (HKEY_CURRENT_USER) 個人配置區，
+;           完全不需要系統管理員權限、不觸發 UAC，即可讓瀏覽器支援 "ie:" 協定。
+; Install : 一般帳號直接雙擊本檔案執行匯入即可。
+; Remove  : 於命令提示字元(cmd)執行： reg delete HKCU\Software\Classes\ie /f
+; ============================================================================
+
+[HKEY_CURRENT_USER\Software\Classes\ie]
+@="URL:Open in Internet Explorer"
+"URL Protocol"=""
+
+[HKEY_CURRENT_USER\Software\Classes\ie\DefaultIcon]
+@="\"C:\\Program Files\\Internet Explorer\\iexplore.exe\",0"
+
+[HKEY_CURRENT_USER\Software\Classes\ie\shell]
+
+[HKEY_CURRENT_USER\Software\Classes\ie\shell\open]
+
+[HKEY_CURRENT_USER\Software\Classes\ie\shell\open\command]
+@="cmd /c set \"u=%1\" & call start \"\" iexplore \"%u:~3%\""

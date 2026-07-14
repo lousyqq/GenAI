@@ -1,0 +1,217 @@
+﻿/* === navbar.css - 雙列導覽列樣式 === */
+/* ================= V27 雙列導覽列 - 極致壓縮空間 ================= */
+.top-navbar-group {
+    background-color: var(--navbar-bg);
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    transition: margin-top 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    margin-top: 0;
+    flex-shrink: 0;
+}
+
+body.nav-hidden .top-navbar-group {
+    margin-top: -72px;
+}
+
+.navbar-row-top {
+    height: 38px;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    background: rgba(0,0,0,0.2);
+}
+
+.navbar-row-bottom {
+    height: 34px;
+    display: flex;
+    align-items: flex-end;
+    padding: 0 16px;
+}
+
+.nav-brand-section {
+    display: flex;
+    align-items: center;
+    flex-shrink: 1;
+    min-width: 0;
+    margin-right: 20px;
+}
+
+.nav-logo-text {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: white;
+    margin: 0;
+    letter-spacing: -0.5px;
+    white-space: nowrap;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+    .nav-logo-text .text-info {
+        color: var(--navbar-accent) !important;
+    }
+
+.nav-breadcrumb-inline {
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.35);
+    margin-left: 12px;
+    padding-left: 12px;
+    border-left: 1px solid rgba(255,255,255,0.1);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 40vw;
+    display: flex;
+    align-items: center;
+}
+
+    .nav-breadcrumb-inline .current {
+        color: rgba(255, 255, 255, 0.7);
+        font-weight: 600;
+        flex-shrink: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+/* 右側工具膠囊 */
+.utility-cluster {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+    height: 100%;
+    flex-shrink: 0;
+}
+
+.util-item {
+    font-size: 0.7rem;
+    color: rgba(255,255,255,0.5);
+    font-weight: 700;
+    border: none;
+    background: transparent;
+    padding: 2px 8px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    transition: all 0.2s;
+    cursor: pointer;
+    height: 26px;
+}
+
+    .util-item:hover {
+        color: white;
+        background: rgba(255,255,255,0.1);
+    }
+
+    .util-item.active {
+        color: var(--navbar-accent);
+    }
+
+.util-divider {
+    width: 1px;
+    height: 14px;
+    background: rgba(255,255,255,0.1);
+    margin: 0 8px;
+}
+
+/* 主選單頁籤 */
+.top-menus {
+    display: flex;
+    align-items: flex-end;
+    flex-grow: 1;
+    align-self: stretch;
+    overflow-x: auto;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+    container-type: inline-size;
+}
+
+    .top-menus::-webkit-scrollbar {
+        display: none;
+    }
+
+.top-menu-link {
+    color: rgba(255,255,255,0.55);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: clamp(10px, 1.2cqi, 12.5px);
+    padding: 6px 4px 5px 4px;
+    border-bottom: 2px solid transparent;
+    letter-spacing: 0px;
+    margin: 0 1px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s;
+}
+
+    .top-menu-link:hover {
+        color: #fff;
+        background: rgba(255,255,255,0.05);
+    }
+
+    .top-menu-link.active {
+        color: white;
+        border-bottom-color: var(--navbar-accent);
+    }
+
+.horizontal-sort-container {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding: 12px;
+    background: #f8fafc;
+    border: 2px dashed #cbd5e1;
+    border-radius: 8px;
+    min-height: 50px;
+}
+
+.sortable-root-item {
+    background: white;
+    border: 1px solid #0d6efd;
+    color: #0d6efd;
+    padding: 6px 18px;
+    border-radius: 20px;
+    font-weight: bold;
+    cursor: grab;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    transition: all 0.2s;
+}
+
+    .sortable-root-item:active {
+        cursor: grabbing;
+    }
+
+    .sortable-root-item.dragging {
+        opacity: 0.5;
+        background: #e2e8f0;
+    }
+
+    .sortable-root-item.drag-over {
+        border-left: 5px solid #dc3545;
+        padding-left: 14px;
+        margin-left: 5px;
+    }
+
+.feedback-link {
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.45);
+    text-decoration: none;
+    font-weight: bold;
+    transition: color 0.2s ease;
+    padding-bottom: 6px;
+    margin-left: auto;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+}
+
+    .feedback-link:hover {
+        color: #38bdf8;
+    }
+

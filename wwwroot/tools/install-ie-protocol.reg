@@ -1,0 +1,34 @@
+Windows Registry Editor Version 5.00
+
+; ============================================================================
+; EQ Dashboard - "ie:" custom protocol handler
+; ----------------------------------------------------------------------------
+; Purpose : Lets the dashboard's "Open in IE" (another tab via IE) menu option
+;           launch Internet Explorer for legacy pages (ActiveX etc.) that do
+;           not render in Edge/Chrome.
+; Install : Double-click this file once per client PC (needs registry write
+;           permission), or deploy to the whole fleet via GPO / login script:
+;               reg import install-ie-protocol.reg
+; Remove  : reg delete HKCR\ie /f
+; Note    : Requires IE11 to be available on the machine. On Windows 11 (and
+;           newer Windows 10 where IE is disabled by policy) iexplore.exe
+;           redirects to Edge - use Edge "IE mode" enterprise site list there.
+; How     : The dashboard navigates to  ie:http://legacy-site/...
+;           The command below strips the leading 3 chars ("ie:") via cmd
+;           variable substring expansion (%u:~3%) and starts IE with the URL.
+;           The "call" is required so the substring expands AFTER "set" runs.
+; ============================================================================
+
+[HKEY_CLASSES_ROOT\ie]
+@="URL:Open in Internet Explorer"
+"URL Protocol"=""
+
+[HKEY_CLASSES_ROOT\ie\DefaultIcon]
+@="\"C:\\Program Files\\Internet Explorer\\iexplore.exe\",0"
+
+[HKEY_CLASSES_ROOT\ie\shell]
+
+[HKEY_CLASSES_ROOT\ie\shell\open]
+
+[HKEY_CLASSES_ROOT\ie\shell\open\command]
+@="cmd /c set \"u=%1\" & call start \"\" iexplore \"%u:~3%\""

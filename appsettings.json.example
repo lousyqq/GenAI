@@ -1,0 +1,39 @@
+{
+  "// NOTE": "這是 appsettings.json 的範本（appsettings.json 本身已被 .gitignore，因含真實 DB 密碼）。複製本檔為 appsettings.json 並填入實際連線字串後即可執行。Production 連線字串建議改用環境變數 ConnectionStrings__GenAI 或 dotnet user-secrets 注入，勿寫死於檔案。",
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*",
+  "ConnectionStrings": {
+    "GenAI": "Data Source=YOUR_SQL_SERVER;Initial Catalog=GenAI;User ID=YOUR_DB_USER;Password=YOUR_DB_PASSWORD;TrustServerCertificate=True;"
+  },
+  "Auth": {
+    "WindowsDomainStripPrefix": "UMC",
+    "EnableEmergencyAdmin": false,
+    "AllowManualLogin": true,
+
+    "// AutoProvisionWindowsAccounts": "true → Windows 偵測到的工號不在 Accounts 表時自動建立 user 帳號（人人可瀏覽），並指派 DefaultRoleIds 的權限群組。",
+    "AutoProvisionWindowsAccounts": true,
+    "DefaultRoleIds": [ "role_1" ],
+
+    "// AccountOverrides": "帳號權限覆寫：每次 Windows 登入強制套用指定工號的 RoleLevel(admin/user) 與 CanEditOthers。",
+    "AccountOverrides": [],
+    "TestAccounts": {
+      "// Enabled": "開發/測試白名單；正式部署務必 false。範本預設 false。",
+      "Enabled": false,
+      "Accounts": []
+    },
+    "Ldap": {
+      "Enabled": false,
+      "Server": "REPLACE_WITH_ACTUAL_AD_SERVER",
+      "Port": 389,
+      "UseSsl": true,
+      "BindDomain": "UMC",
+      "SearchBase": "DC=umc,DC=com",
+      "UserPrincipalSuffix": "@umc.com"
+    }
+  }
+}
