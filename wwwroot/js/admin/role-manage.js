@@ -14,6 +14,8 @@ export function openAddRoleModal() {
     try {
         document.getElementById('roleForm').reset();
         document.getElementById('editRoleId').value = '';
+        const nameEl = document.getElementById('roleName');
+        if (nameEl) nameEl.disabled = false;
         if (typeof renderRoleMenuCheckboxes === 'function') renderRoleMenuCheckboxes([]);
         showModalSafely('roleModal');
     } catch (e) { console.error("[openAddRoleModal] 錯誤:", e); }
@@ -24,8 +26,13 @@ export function editRole(id) {
         const role = getRoles().find(r => window.cleanId(r.id) === window.cleanId(id));
         if (!role) { console.error("找不到對應的群組資料 (ID: " + id + ")"); return; }
 
+        const isMaster = window.cleanId(role.id) === 'role_1' || (role.groupName || '').includes('12A') || (role.groupName || '').includes('主模組');
         document.getElementById('editRoleId').value = role.id;
-        document.getElementById('roleName').value = role.groupName;
+        const nameEl = document.getElementById('roleName');
+        if (nameEl) {
+            nameEl.value = isMaster ? '12A主模組' : role.groupName;
+            nameEl.disabled = isMaster;
+        }
         if (typeof renderRoleMenuCheckboxes === 'function') renderRoleMenuCheckboxes(role.allowedMenuIds || []);
         showModalSafely('roleModal');
     } catch (e) { console.error("[editRole] 錯誤:", e); }
@@ -188,6 +195,10 @@ export async function saveRoleItem(e) {
 
 export async function deleteRole(id) {
     try {
+        if (window.cleanId(id) === 'role_1') {
+            customAlert("此為系統固定主選單配置群組 (12A主模組)，不可刪除！");
+            return;
+        }
         customConfirm('確定要刪除此群組嗎？(若有廠區或帳號綁定此群組將自動解除)', async () => {
             const result = await deleteRoleAPI(id);
             if (!result.success) {

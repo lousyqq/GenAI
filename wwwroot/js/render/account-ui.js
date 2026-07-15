@@ -167,28 +167,16 @@ export function computeRoleAllowedSet() {
     return window.getAllowedIdsWithHierarchy(getCustomMenus(), initialMenuIds);
 }
 
-// 此帳號「可存取的廠區」= 廠區綁定角色 ∩ 目前已勾選角色 ≠ ∅（回傳廠區名陣列）
+// 此帳號「可存取的廠區」= 所有現存廠區（單一系統版面預設皆可觀看，不再檢查 Map_Fab_Role）
 function getAccessibleOverrideFabs() {
-    const checked = getCheckedRoleIds().map(window.cleanId);
-    return getFabs().filter(f => {
-        const fabRoles = (f.assignedRoles || f.AssignedRoles || []).map(window.cleanId);
-        return fabRoles.some(r => checked.includes(r));
-    }).map(f => f.fabName || f.FabName || f.id || f.fabId || f.FabId || '').filter(Boolean);
+    let fabs = getFabs().map(f => f.fabName || f.FabName || f.id || f.fabId || f.FabId || '').filter(Boolean);
+    return fabs.length ? fabs : ['12A'];
 }
 window.__getAccessibleOverrideFabs = getAccessibleOverrideFabs;
 
-// 某廠區「role 可見集合」= (該廠區綁定且目前已勾選的角色) 的 allowedMenuIds 展開（含子節點）
+// 某廠區「role 可見集合」= 單一系統版面預設涵蓋所有選單
 function computeRoleAllowedSetForFab(fabName) {
-    const checked = getCheckedRoleIds().map(window.cleanId);
-    const fab = getFabs().find(f => window.cleanId(f.fabName || f.FabName || f.id || f.fabId || f.FabId) === window.cleanId(fabName));
-    const fabRoles = fab ? (fab.assignedRoles || fab.AssignedRoles || []).map(window.cleanId) : [];
-    const activeRoleIds = fabRoles.filter(r => checked.includes(r));
-    const roles = getRoles();
-    let initialMenuIds = [];
-    activeRoleIds.forEach(rId => {
-        const role = roles.find(r => window.cleanId(r.id || r.RoleId) === window.cleanId(rId));
-        if (role && (role.allowedMenuIds || role.AllowedMenuIds)) initialMenuIds.push(...(role.allowedMenuIds || role.AllowedMenuIds));
-    });
+    let initialMenuIds = getCustomMenus().map(m => m.id || m.MenuId);
     return window.getAllowedIdsWithHierarchy(getCustomMenus(), initialMenuIds);
 }
 
@@ -216,25 +204,8 @@ window.renderAccOverridePanel = function () {
     }
 
     if (selWrap) {
-        if (accessible.length === 0) {
-            selWrap.innerHTML = '<div class="text-warning small px-1"><i class="fas fa-exclamation-circle me-1"></i>請先在「可視群組版面」勾選至少一個廠區，才能設定該廠區的個別覆寫</div>';
-        } else {
-            const btns = accessible.map(fName => {
-                const active = window.cleanId(fName) === window.cleanId(appState.overrideFab) ? 'btn-primary' : 'btn-outline-primary';
-                return `<button type="button" class="btn btn-sm ${active} js-override-fab" data-fab="${window.escapeHTML(fName)}">${window.escapeHTML(fName)}</button>`;
-            }).join('');
-            selWrap.innerHTML = `<div class="d-flex align-items-center flex-wrap gap-1"><span class="small text-secondary fw-bold me-1"><i class="fas fa-industry me-1"></i>設定廠區：</span><div class="btn-group btn-group-sm flex-wrap" role="group">${btns}</div></div>`;
-            if (!selWrap.hasAttribute('data-ovfab-bound')) {
-                selWrap.setAttribute('data-ovfab-bound', '1');
-                selWrap.addEventListener('click', (e) => {
-                    const b = e.target.closest('.js-override-fab');
-                    if (!b) return;
-                    persistOverrideDom();                       // 切換前先把目前廠區存起來
-                    appState.overrideFab = b.getAttribute('data-fab');
-                    window.renderAccOverridePanel();
-                });
-            }
-        }
+        // 單一系統版面預設只固定一個廠區，自動選擇並且隱藏多餘的切換 UI
+        selWrap.style.display = 'none';
     }
 
     window.renderAccExtraMenuCheckboxes();
@@ -460,18 +431,9 @@ window.openMenuSelector = function (fabName) {
     const fabObj = fabs.find(f => window.cleanId(f.fabName || f.FabName || f.id || f.fabId || f.FabId) === window.cleanId(fabName));
     const fabRoleIds = fabObj ? (fabObj.assignedRoles || fabObj.AssignedRoles || []) : [];
 
-    // ⭐️ 不分 admin / 非 admin：預設看板挑選器一律以「該廠區綁定的 role ∩ 帳號可視廠區」之 allowedMenuIds（含子節點）為範圍，
-    //    與實際側邊欄 renderSidebarMenus(sidebar.js) 的 fabRoleIds ∩ assignedRoles 過濾邏輯一致。
-    //    （修正：admin 帳號原本走特例把「全部看板」都倒出來、無視廠區，導致「只設給 12M 可見的看板，在 12A 的預設看板挑選器也跑出來」。）
-    const activeRoleIds = fabRoleIds.filter(id => assignedRoles.includes(id));
-    const roles = getRoles(); let initialMenuIds = [];
-    activeRoleIds.forEach(roleId => {
-        const role = roles.find(r => window.cleanId(r.id || r.RoleId) === window.cleanId(roleId));
-        const allowed = role ? (role.allowedMenuIds || role.AllowedMenuIds || []) : [];
-        if (allowed) initialMenuIds.push(...allowed);
-    });
-
     const allMenus = getCustomMenus();
+    // 單一系統版面預設皆可觀看，與 renderSidebarMenus 同步放寬所有選單
+    let initialMenuIds = allMenus.map(m => m.id || m.MenuId);
     let allowedIds = new Set(initialMenuIds.map(id => window.cleanId(id)));
 
     // 由已允許的資料夾往下展開子節點（含 app_grid 等），確保資料夾底下的看板也可被選為預設頁。

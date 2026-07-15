@@ -26,22 +26,20 @@ public class AuthService : IAuthService
     {
         if (string.IsNullOrWhiteSpace(identityName)) return null;
 
-        // 形態 1: DOMAIN\username  (NTLM/Negotiate 典型)
-        var backslashIdx = identityName.IndexOf('\\');
-        if (backslashIdx >= 0 && backslashIdx < identityName.Length - 1)
+        var empId = identityName.Trim();
+        var slashIdx = empId.LastIndexOf('\\');
+        if (slashIdx >= 0 && slashIdx < empId.Length - 1)
         {
-            return identityName[(backslashIdx + 1)..].Trim();
+            empId = empId[(slashIdx + 1)..].Trim();
         }
 
-        // 形態 2: username@domain.com  (UPN / Kerberos)
-        var atIdx = identityName.IndexOf('@');
+        var atIdx = empId.IndexOf('@');
         if (atIdx > 0)
         {
-            return identityName[..atIdx].Trim();
+            empId = empId[..atIdx].Trim();
         }
 
-        // 形態 3: 純使用者名稱
-        return identityName.Trim();
+        return string.IsNullOrWhiteSpace(empId) ? null : empId;
     }
 
     public Task<(bool success, string? errorMessage)> VerifyLdapPasswordAsync(string empId, string password)

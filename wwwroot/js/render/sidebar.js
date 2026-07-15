@@ -274,18 +274,26 @@ export function renderSidebarMenus() {
         const fabsList = getFabs();
         const currentFabObj = fabsList.find(f => window.cleanId(f.fabName || f.FabName || f.id || f.fabId || f.FabId) === cCurrentFab);
 
-        const fabRoleIds = currentFabObj ? (currentFabObj.assignedRoles || currentFabObj.AssignedRoles || []) : [];
-        const userRoleIds = appState.currentUser.assignedRoles || appState.currentUser.AssignedRoles || [];
-        const activeRoleIds = fabRoleIds.filter(id => userRoleIds.some(uId => window.cleanId(uId) === window.cleanId(id)));
-
-        const roles = getRoles();
+        // 系統主選單配置：預設採用 12A主模組 (role_1) 配置的選單與排序，再聯集個人指派群組
         let initialMenuIds = [];
-        
-        activeRoleIds.forEach(roleId => {
-            const role = roles.find(r => window.cleanId(r.id || r.RoleId || r.roleId) === window.cleanId(roleId));
-            const allowed = role ? (role.allowedMenuIds || role.AllowedMenuIds || []) : [];
-            if (allowed) initialMenuIds.push(...allowed);
-        });
+        const rolesList = getRoles();
+        const mainRole = rolesList.find(r => window.cleanId(r.id) === 'role_1' || (r.groupName || '').includes('12A') || (r.groupName || '').includes('主模組'));
+        if (mainRole && Array.isArray(mainRole.allowedMenuIds)) {
+            initialMenuIds.push(...mainRole.allowedMenuIds);
+        }
+        if (appState.currentUser && Array.isArray(appState.currentUser.assignedRoles)) {
+            appState.currentUser.assignedRoles.forEach(rId => {
+                const r = rolesList.find(x => window.cleanId(x.id) === window.cleanId(rId));
+                if (r && Array.isArray(r.allowedMenuIds)) {
+                    r.allowedMenuIds.forEach(mId => {
+                        if (!initialMenuIds.some(x => window.cleanId(x) === window.cleanId(mId))) {
+                            initialMenuIds.push(mId);
+                        }
+                    });
+                }
+            });
+        }
+        if (initialMenuIds.length === 0) initialMenuIds = menus.map(m => m.id);
 
         // === 權限優先序：Menu ACL > Account extra/deny > Role-based =================
         // 預先計算 menu-level ACL 對當前使用者的效果
@@ -514,7 +522,7 @@ export function renderSidebarMenus() {
                 { id: 'page-webpage-manage', icon: 'fas fa-file-code', i18nKey: 'menu_webpage_manage', fallback: '看板網頁管理', display: canManage },
                 { id: 'page-menu-manage', icon: 'fas fa-sitemap', i18nKey: 'menu_menu_manage', fallback: '選單配置管理', display: canManage },
                 { id: 'page-role-manage', icon: 'fas fa-users-cog', i18nKey: 'menu_role_manage', fallback: '權限管理', display: role === 'admin' },
-                { id: 'page-account-manage', icon: 'fas fa-user-shield', i18nKey: 'menu_account_manage', fallback: '帳號管理', display: role === 'admin' || (appState.currentUser && appState.currentUser.canEditOthers) },
+                { id: 'page-account-manage', icon: 'fas fa-user-shield', i18nKey: 'menu_account_manage', fallback: '帳號管理', display: role === 'admin' },
                 { id: 'page-apply', icon: 'fas fa-paper-plane', i18nKey: 'menu_apply', fallback: '需求申請', display: role !== 'admin' },
                 { id: 'page-activity-log', icon: 'fas fa-history', i18nKey: 'menu_activity_log', fallback: '操作紀錄', display: role === 'admin' }
             ];

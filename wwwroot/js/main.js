@@ -210,6 +210,9 @@ document.addEventListener("DOMContentLoaded", async () => {
             const restored = restoreLoginFromStorage();
             if (restored) {
                 initDashboardUI();
+                // 即使從 localStorage 還原了快取帳號，依然需要向伺服器驗證當前桌機 Windows 身分 (WhoAmI)；
+                // 如果桌機帳號已改變 (例如從 00058896 切換回 yu-ting)，會自動更新 localStorage 並刷新頁面。
+                waitForTryAutoLogin(5000).then(ready => { if (ready) window.tryAutoLogin(); });
             } else {
                 const ready = await waitForTryAutoLogin(5000);
                 if (ready) {

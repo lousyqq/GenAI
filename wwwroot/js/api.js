@@ -97,13 +97,13 @@ window.fetch = async function (...args) {
     //   umc_force_manual_login 旗標卡住 Windows 自動登入）＋彈「登入時效已過期」擾民視窗
     //   （2026-07-03 修正）。其 401 由呼叫端 `if (myProfileRes.ok)` 靜默處理即可。
     if (response.status === 401 && !urlStr.includes('/api/Auth/Login') && !urlStr.includes('/Settings/GetInitialData') && !urlStr.includes('/api/Auth/WhoAmI') && !urlStr.includes('/api/Auth/MyProfile')) {
-        if (typeof logout === 'function') {
-            logout();
+        if (typeof window.tryAutoLogin === 'function') {
+            window.tryAutoLogin();
         }
         if (typeof customAlert === 'function') {
-            customAlert("您的登入時效已過期或無權限，請重新登入！");
+            customAlert("您的登入時效已過期或無權限，請重新整理網頁或認證身份！");
         } else {
-            alert("您的登入時效已過期或無權限，請重新登入！");
+            alert("您的登入時效已過期或無權限，請重新整理網頁或認證身份！");
         }
     } else if (response.status === 403) {
         if (typeof customAlert === 'function') {

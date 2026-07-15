@@ -67,16 +67,12 @@ public class AuthController : ControllerBase
     [Authorize(AuthenticationSchemes = NegotiateDefaults.AuthenticationScheme)]
     public async Task<IActionResult> WhoAmI()
     {
-        var rawName = User?.Identity?.Name ?? "";
+        var rawName = !string.IsNullOrWhiteSpace(_authSettings.SimulatedWindowsAccount)
+            ? _authSettings.SimulatedWindowsAccount
+            : (User?.Identity?.Name ?? "");
 
-        // 剝掉任意網域前綴（UMC\00058897 → 00058897、SARIEL\yu-tinglin → yu-tinglin），
-        // 再剝 @domain.com (Kerberos UPN 形態的保險)。不再依賴固定的 WindowsDomainStripPrefix，
-        // 部署機與開發機網域不同也能取到工號。
-        var empId = rawName.Trim();
-        var slashIdx = empId.LastIndexOf('\\');
-        if (slashIdx >= 0) empId = empId[(slashIdx + 1)..];
-        var atIdx = empId.IndexOf('@');
-        if (atIdx > 0) empId = empId[..atIdx];
+        // 剝掉任意網域前綴與 @domain.com，統一由 _authService.ExtractEmpIdFromWindowsIdentity 處理
+        var empId = _authService.ExtractEmpIdFromWindowsIdentity(rawName) ?? "";
 
         if (string.IsNullOrWhiteSpace(empId))
         {
@@ -218,13 +214,16 @@ public class AuthController : ControllerBase
 
         if (a == null) return NotFound();
 
+        var ovr = _authSettings.AccountOverrides
+            ?.FirstOrDefault(o => string.Equals(o.EmpId, empId, StringComparison.OrdinalIgnoreCase));
+        var effectiveRole = ovr != null && !string.IsNullOrWhiteSpace(ovr.RoleLevel) ? ovr.RoleLevel.ToLower() : (a.RoleLevel ?? "user").ToLower();
+        var effectiveCanEdit = ovr != null ? ovr.CanEditOthers : a.CanEditOthers;
+
         return Ok(new
         {
             empId = a.EmpId,
-            // 自身的 roleLevel / canEditOthers：讓 MyProfile 成為「登入者權限」的自足來源，
-            // 前端 delegated-admin UI 判定不再隱性依賴 GetInitialData 的自身列或 Login 回應（皆為自己的值，無資訊外洩）。
-            roleLevel = a.RoleLevel ?? "user",
-            canEditOthers = a.CanEditOthers,
+            roleLevel = effectiveRole,
+            canEditOthers = effectiveCanEdit,
             assignedRoles = a.MapAccountRoles?.Select(m => m.RoleId).ToList() ?? new List<string>(),
             manageableMenus = a.MapAccountManageMenus?.Select(m => m.MenuId).ToList() ?? new List<string>(),
             // per-fab：以 FabId 分組成 { fabId: [menuId,...] }
@@ -330,6 +329,26 @@ public class AuthController : ControllerBase
                     RoleLevel = "admin",
                     CanEditOthers = true
                 };
+            }
+            else if (loginSource == "manual" && _authSettings.AutoProvisionWindowsAccounts)
+            {
+                account = new Models.Account
+                {
+                    EmpId = empId,
+                    Name = empId,
+                    Department = "",
+                    RoleLevel = "user",
+                    CanEditOthers = false,
+                    LoginCount = 0
+                };
+                _context.Accounts.Add(account);
+                foreach (var roleId in _authSettings.DefaultRoleIds.Where(r => !string.IsNullOrWhiteSpace(r)))
+                {
+                    _context.MapAccountRoles.Add(new Models.MapAccountRole { EmpId = empId, RoleId = roleId });
+                }
+                await _context.SaveChangesAsync();
+                _logger.LogInformation("Login: 自動建立手動 LDAP 登入帳號 {EmpId}（預設群組: {Roles}）",
+                    empId, string.Join(",", _authSettings.DefaultRoleIds));
             }
             else
             {

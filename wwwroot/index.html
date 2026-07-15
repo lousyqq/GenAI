@@ -39,65 +39,22 @@
         <button class="btn btn-sm btn-danger py-0 px-2 fw-bold" style="font-size: 0.75rem;" onclick="toggleFullscreen()"><i class="fas fa-compress me-1"></i> 退出</button>
     </div>
 
-    <!-- 登入框 (Windows 自動偵測 + 手動帳密) -->
+    <!-- 登入框 (純 Windows / 模擬桌機自動偵測) -->
     <div id="login-overlay" style="display:none;">
         <div class="login-box">
             <h4 class="text-center mb-3 fw-bold" style="color: #0b1120;"><i class="fas fa-microchip me-2"></i><span data-i18n="login_title">GenAI</span></h4>
 
-            <!-- Tab 切換列 -->
-            <ul class="nav nav-pills nav-fill mb-3" id="loginTabs" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="tab-windows" data-bs-toggle="pill" data-bs-target="#pane-windows" type="button" role="tab">
-                        <i class="fas fa-windows me-1"></i> 自動偵測
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="tab-manual" data-bs-toggle="pill" data-bs-target="#pane-manual" type="button" role="tab">
-                        <i class="fas fa-key me-1"></i> 手動輸入
-                    </button>
-                </li>
-            </ul>
-
-            <div class="tab-content">
-                <!-- Tab 1：Windows 自動偵測 -->
-                <div class="tab-pane fade show active" id="pane-windows" role="tabpanel">
-                    <div id="whoami-status" class="alert alert-light border text-center py-3 mb-3" style="font-size: 0.85rem;">
-                        <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
-                        正在偵測桌機登入者...
-                    </div>
-                    <button type="button" class="btn btn-success btn-sm w-100 fw-bold py-2 mb-2" id="btn-windows-continue" onclick="doWindowsLogin()" disabled>
-                        <i class="fas fa-sign-in-alt me-1"></i> 以此身份進入
-                    </button>
-                    <button type="button" class="btn btn-outline-secondary btn-sm w-100" onclick="retryWhoAmI()">
-                        <i class="fas fa-sync-alt me-1"></i> 重試偵測
-                    </button>
+            <div id="pane-windows">
+                <div id="whoami-status" class="alert alert-light border text-center py-3 mb-3" style="font-size: 0.85rem;">
+                    <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                    正在偵測桌機登入者...
                 </div>
-
-                <!-- Tab 2：手動輸入 -->
-                <div class="tab-pane fade" id="pane-manual" role="tabpanel">
-                    <form onsubmit="doLogin(); return false;">
-                        <div class="mb-3">
-                            <label class="form-label text-muted small fw-bold mb-1" data-i18n="login_emp_id">工號 (Emp ID)</label>
-                            <input type="text" id="empId" class="form-control form-control-sm" placeholder="請輸入工號" autocomplete="username">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label text-muted small fw-bold mb-1" data-i18n="login_pwd">密碼 (Password)</label>
-                            <input type="password" id="empPwd" class="form-control form-control-sm" placeholder="AD 密碼或測試密碼" autocomplete="current-password">
-                        </div>
-                        <div id="manual-login-error" class="alert alert-danger py-2 mb-3 d-none" style="font-size: 0.8rem;"></div>
-                        <button type="submit" class="btn btn-primary btn-sm w-100 fw-bold py-2"><i class="fas fa-sign-in-alt me-1"></i><span data-i18n="login_btn"> 登入</span></button>
-                    </form>
-                    <!-- 測試帳號提示（appsettings.Auth.TestAccounts.Enabled=false 後可移除這段）
-                         Round-5 B8：列表跟 appsettings.json 的 4 組 TestAccount 對齊 -->
-                    <div class="alert alert-warning border py-2 mt-3 mb-0" style="font-size: 0.75rem;">
-                        <div class="fw-bold mb-1"><i class="fas fa-vial me-1"></i> 測試環境帳號</div>
-                        <div><b>admin / admin</b> — 全域管理員</div>
-                        <div><b>user / user</b> — 一般使用者 (無 role)</div>
-                        <div><b>subadmin_user / 123456</b> — 委派管理 m_ze 的 user</div>
-                        <div><b>normal_user / 123456</b> — 無任何 role 的 user</div>
-                        <div class="text-muted mt-1" style="font-size: 0.7rem;">正式部署前請在 appsettings.json 把 Auth.TestAccounts.Enabled 改為 false</div>
-                    </div>
-                </div>
+                <button type="button" class="btn btn-success btn-sm w-100 fw-bold py-2 mb-2" id="btn-windows-continue" onclick="doWindowsLogin()" disabled>
+                    <i class="fas fa-sign-in-alt me-1"></i> 以此身份進入
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm w-100" onclick="retryWhoAmI()">
+                    <i class="fas fa-sync-alt me-1"></i> 重試偵測
+                </button>
             </div>
         </div>
     </div>
@@ -137,7 +94,6 @@
                         <!-- Round-5 B7 修：預設值「系統管理員 (admin)」「資訊處」改成「載入中…」骨架 -->
                         <div class="p-3 bg-light border-bottom d-flex align-items-center"><div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 45px; height: 45px; font-size: 1.5rem; flex-shrink: 0;"><i class="fas fa-user"></i></div><div class="ms-3 overflow-hidden"><div class="fw-bold text-dark fs-6 text-truncate" id="dropdown-user-name">載入中…</div><div class="text-muted small text-truncate mt-1"><i class="fas fa-sitemap me-1"></i> <span id="dropdown-user-dept">—</span></div></div></div>
                         <div class="p-3 bg-white"><div class="d-flex justify-content-between align-items-center mb-3"><div class="text-secondary fw-bold"><i class="fas fa-chart-line me-2 text-success"></i><span data-i18n="nav_login_count">累積登入次數</span></div><div class="badge bg-success bg-opacity-10 text-success px-2 py-1 border border-success border-opacity-25" id="dropdown-user-login-count">— 次</div></div><div class="d-flex justify-content-between align-items-center"><div class="text-secondary fw-bold"><i class="fas fa-clock me-2 text-primary"></i><span data-i18n="nav_login_time">本次登入時間</span></div><div class="fw-bold text-dark text-nowrap" style="font-size: 0.85rem;" id="dropdown-user-login-time">—</div></div></div>
-                        <div class="border-top"><a class="dropdown-item py-3 fw-bold cursor-pointer bg-light d-flex align-items-center" onclick="logout()"><i class="fas fa-sign-out-alt text-danger me-2 fs-5"></i> <span class="text-danger" data-i18n="nav_logout">登出系統</span></a></div>
                     </ul>
                 </div>
             </div>

@@ -171,13 +171,16 @@ public class MenuAuthService : IMenuAuthService
             return new HashSet<string>(cachedSet, StringComparer.OrdinalIgnoreCase);
         }
 
-        // ① 抓 user 的 roles → 對應 allowedMenuIds
+        // ① 系統主選單配置與群組授權：預設所有帳號均繼承「12A主模組 (role_1)」主選單配置，再聯集其所指派的其他 Roles
         var roleIds = await _context.MapAccountRoles.AsNoTracking()
             .Where(m => m.EmpId == empId).Select(m => m.RoleId).ToListAsync();
-        var roleAllowed = roleIds.Count == 0
-            ? new List<string>()
-            : await _context.MapRoleMenus.AsNoTracking()
-                .Where(m => roleIds.Contains(m.RoleId)).Select(m => m.MenuId).ToListAsync();
+        if (!roleIds.Contains("role_1", StringComparer.OrdinalIgnoreCase)) roleIds.Add("role_1");
+
+        var roleAllowed = await _context.MapRoleMenus.AsNoTracking()
+            .Where(m => roleIds.Contains(m.RoleId))
+            .Select(m => m.MenuId)
+            .Distinct()
+            .ToListAsync();
 
         // ② 帳號層級 per-fab extra / deny（綁定廠區）
         //    ⚠️ 本方法回傳的是「跨所有可存取廠區的可見聯集」，僅用來過濾 GetInitialData / GetMenus
@@ -190,10 +193,10 @@ public class MenuAuthService : IMenuAuthService
         var denyRows = await _context.MapAccountDenyMenus.AsNoTracking()
             .Where(m => m.EmpId == empId).Select(m => new { m.FabId, m.MenuId }).ToListAsync();
 
-        // 此帳號「可存取的廠區」= 其角色 ∩ 各廠區綁定角色 ≠ ∅
-        var accessibleFabs = (await _context.MapFabRoles.AsNoTracking()
-                .Where(fr => roleIds.Contains(fr.RoleId)).Select(fr => fr.FabId).Distinct().ToListAsync())
+        // 此帳號「可存取的廠區」= 所有現存廠區（單一系統版面預設皆可觀看）
+        var accessibleFabs = (await _context.Fabs.AsNoTracking().Select(f => f.FabId).ToListAsync())
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        if (accessibleFabs.Count == 0) accessibleFabs.Add("fab_12a");
 
         // extra 聯集：只取「可存取廠區」內的 extra menu
         var extras = extraRows

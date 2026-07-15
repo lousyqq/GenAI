@@ -300,9 +300,18 @@ export function renderRoleTable() {
             return m ? `<span class="badge badge-flat-list me-1 mb-1">${window.escapeHTML(mName)}</span>` : '';
         }).join('');
         if (!menuBadges) menuBadges = '<span class="text-muted small">無綁定看板</span>';
-        const rId = r.id || r.roleId || r.RoleId || ''; const rName = window.escapeHTML(r.groupName || r.GroupName || rId);
-        let actionBtns = `<div class="d-flex flex-nowrap justify-content-center gap-2"><button type="button" class="btn btn-sm btn-outline-primary" style="width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center;" onclick="event.stopPropagation(); editRole('${rId}');" title="編輯"><i class="fas fa-edit"></i></button><button type="button" class="btn btn-sm btn-outline-danger" style="width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center;" onclick="event.stopPropagation(); deleteRole('${rId}')" title="刪除"><i class="fas fa-trash-alt"></i></button></div>`;
-        htmlBuffer.push(`<tr><td class="text-start ps-3 fw-bold text-primary align-middle">${rName}</td><td class="text-start align-middle" style="max-width: 400px; white-space: normal;">${menuBadges}</td><td class="text-center align-middle" style="white-space: nowrap; width: 1%;">${actionBtns}</td></tr>`);
+        const rId = window.cleanId(r.id || r.roleId || r.RoleId || '');
+        const isMaster = rId === 'role_1' || (r.groupName || r.GroupName || '').includes('12A') || (r.groupName || r.GroupName || '').includes('主模組');
+        const rName = window.escapeHTML(isMaster ? '12A主模組' : (r.groupName || r.GroupName || rId));
+        const badgePrefix = isMaster ? `<span class="badge bg-primary text-white me-2 mb-1" style="font-size:0.75rem;">主選單配置</span><br/>` : '';
+        let actionBtns = `<div class="d-flex flex-nowrap justify-content-center gap-2"><button type="button" class="btn btn-sm btn-outline-primary" style="width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center;" onclick="event.stopPropagation(); editRole('${_jsArg(rId)}');" title="編輯選單組合與排序"><i class="fas fa-edit"></i></button>`;
+        if (!isMaster) {
+            actionBtns += `<button type="button" class="btn btn-sm btn-outline-danger" style="width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center;" onclick="event.stopPropagation(); deleteRole('${_jsArg(rId)}')" title="刪除"><i class="fas fa-trash-alt"></i></button>`;
+        } else {
+            actionBtns += `<button type="button" class="btn btn-sm btn-outline-secondary disabled" style="width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center; opacity: 0.3;" title="系統固定主選單配置，不可刪除"><i class="fas fa-lock"></i></button>`;
+        }
+        actionBtns += `</div>`;
+        htmlBuffer.push(`<tr><td class="text-start ps-3 fw-bold text-primary align-middle">${badgePrefix}${rName}</td><td class="text-start align-middle" style="max-width: 400px; white-space: normal;">${menuBadges}</td><td class="text-center align-middle" style="white-space: nowrap; width: 1%;">${actionBtns}</td></tr>`);
     });
     tbody.innerHTML = htmlBuffer.join('');
     initDataTable('dtRole');

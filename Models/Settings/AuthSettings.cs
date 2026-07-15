@@ -2,6 +2,9 @@ namespace GenAI.Models.Settings;
 
 public class AuthSettings
 {
+    /// <summary>本機開發模擬 Windows 桌機登入帳號：設定如 "UMC\00058897" 或 "UMC\test"；留空 "" 則使用系統實際偵測到的 Windows 帳號。</summary>
+    public string? SimulatedWindowsAccount { get; set; }
+
     public string? WindowsDomainStripPrefix { get; set; }
     public bool EnableEmergencyAdmin { get; set; }
     public bool AllowManualLogin { get; set; }

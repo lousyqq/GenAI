@@ -163,15 +163,21 @@ export async function fetchWhoAmI(allowAutoLogin = false) {
                 //   防護：
                 //     - allowAutoLogin 只有初次進入點為 true
                 //     - _autoLoginInProgress 防雙重觸發 (Round-5 B2 的 LoginCount +2 問題)
-                //     - !appState.currentUser 防已登入時又被觸發
-                //     - sessionStorage FORCE_MANUAL_KEY 為 1 時 = 使用者剛 logout，不自動登入
+                const currId = window.cleanId ? window.cleanId(appState.currentUser?.id || appState.currentUser?.empId || '') : String(appState.currentUser?.id || appState.currentUser?.empId || '').trim().toLowerCase();
+                const targetId = window.cleanId ? window.cleanId(data.empId || '') : String(data.empId || '').trim().toLowerCase();
+                const isUserMismatch = Boolean(appState.currentUser && targetId && currId && currId !== targetId);
+
                 if (allowAutoLogin 
                     && !_autoLoginInProgress
-                    && !appState.currentUser
+                    && (!appState.currentUser || isUserMismatch)
                     && sessionStorage.getItem(FORCE_MANUAL_KEY) !== '1') {
                     _autoLoginInProgress = true;
                     try {
-                        await completeLoginAfterAuth(data.empId, 'windows', data.account || null);
+                        const ok = await completeLoginAfterAuth(data.empId, 'windows', data.account || null);
+                        if (ok && isUserMismatch) {
+                            window.location.reload();
+                            return;
+                        }
                     } finally {
                         _autoLoginInProgress = false;
                     }

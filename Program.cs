@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
@@ -159,6 +161,83 @@ builder.Services
         options.Cookie.SecurePolicy = requireHttps
             ? CookieSecurePolicy.Always
             : CookieSecurePolicy.SameAsRequest;
+        options.Events.OnValidatePrincipal = async context =>
+        {
+            var empId = context.Principal?.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!string.IsNullOrWhiteSpace(empId))
+            {
+                var authSetForSim = context.HttpContext.RequestServices.GetService<Microsoft.Extensions.Options.IOptionsSnapshot<AuthSettings>>()?.Value;
+                if (!string.IsNullOrWhiteSpace(authSetForSim?.SimulatedWindowsAccount))
+                {
+                    var authSvc = context.HttpContext.RequestServices.GetService<IAuthService>();
+                    var simEmpId = authSvc?.ExtractEmpIdFromWindowsIdentity(authSetForSim.SimulatedWindowsAccount);
+                    if (!string.IsNullOrWhiteSpace(simEmpId) && !string.Equals(empId, simEmpId, StringComparison.OrdinalIgnoreCase))
+                    {
+                        context.RejectPrincipal();
+                        await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                        return;
+                    }
+                }
+
+                var loginSource = context.Principal?.FindFirstValue("LoginSource") ?? "windows";
+                var isTestOrEmergency = string.Equals(loginSource, "test", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(loginSource, "emergency", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(empId, "admin", StringComparison.OrdinalIgnoreCase);
+
+                var db = context.HttpContext.RequestServices.GetRequiredService<AppDbContext>();
+                var account = await db.Accounts.AsNoTracking().FirstOrDefaultAsync(a => a.EmpId.ToLower() == empId.Trim().ToLower());
+                if (account == null)
+                {
+                    // 若是 TestAccounts / EmergencyAdmin (例如 admin)，因其僅存在記憶體或設定檔中，不在 DB Accounts 表，絕對不可 RejectPrincipal
+                    if (isTestOrEmergency)
+                    {
+                        var authSet = context.HttpContext.RequestServices.GetService<Microsoft.Extensions.Options.IOptionsSnapshot<AuthSettings>>()?.Value;
+                        var overrideRole = authSet?.AccountOverrides?.FirstOrDefault(o => string.Equals(o.EmpId, empId, StringComparison.OrdinalIgnoreCase))?.RoleLevel;
+                        if (!string.IsNullOrWhiteSpace(overrideRole))
+                        {
+                            var currentRole = (context.Principal?.FindFirstValue(ClaimTypes.Role) ?? "").ToLower();
+                            if (!string.Equals(currentRole, overrideRole.ToLower(), StringComparison.OrdinalIgnoreCase))
+                            {
+                                var testClaims = new List<Claim>
+                                {
+                                    new(ClaimTypes.NameIdentifier, empId),
+                                    new(ClaimTypes.Name, context.Principal?.FindFirstValue(ClaimTypes.Name) ?? empId),
+                                    new(ClaimTypes.Role, overrideRole.ToLower()),
+                                    new("LoginSource", loginSource)
+                                };
+                                context.ReplacePrincipal(new ClaimsPrincipal(new ClaimsIdentity(testClaims, CookieAuthenticationDefaults.AuthenticationScheme)));
+                                context.ShouldRenew = true;
+                            }
+                        }
+                        return;
+                    }
+
+                    context.RejectPrincipal();
+                    await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                    return;
+                }
+
+                var authSettings = context.HttpContext.RequestServices.GetService<Microsoft.Extensions.Options.IOptionsSnapshot<AuthSettings>>()?.Value;
+                var ovr = authSettings?.AccountOverrides?.FirstOrDefault(o => string.Equals(o.EmpId, account.EmpId, StringComparison.OrdinalIgnoreCase));
+                var effectiveRole = ovr != null && !string.IsNullOrWhiteSpace(ovr.RoleLevel) ? ovr.RoleLevel.ToLower() : (account.RoleLevel ?? "user").ToLower();
+
+                var cookieRole = (context.Principal?.FindFirstValue(ClaimTypes.Role) ?? "").ToLower();
+                if (!string.Equals(cookieRole, effectiveRole, StringComparison.OrdinalIgnoreCase))
+                {
+                    var claims = new List<Claim>
+                    {
+                        new(ClaimTypes.NameIdentifier, account.EmpId),
+                        new(ClaimTypes.Name, account.Name ?? account.EmpId),
+                        new(ClaimTypes.Role, effectiveRole),
+                        new("LoginSource", loginSource)
+                    };
+                    var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+                    var newPrincipal = new ClaimsPrincipal(identity);
+                    context.ReplacePrincipal(newPrincipal);
+                    context.ShouldRenew = true;
+                }
+            }
+        };
         options.Events.OnRedirectToLogin = context =>
         {
             context.Response.StatusCode = 401;
