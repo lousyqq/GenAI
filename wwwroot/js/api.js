@@ -232,6 +232,7 @@ export async function fetchInitialDataFromDB() {
                 targetPage: String(getVal(m, 'TargetPage') || getVal(m, 'targetPage') || ''),
                 target: String(getVal(m, 'OpenTarget') || getVal(m, 'target') || 'iframe'),
                 icon: String(getVal(m, 'Icon') || getVal(m, 'icon') || ''),
+                Icon: String(getVal(m, 'Icon') || getVal(m, 'icon') || ''),
                 createdBy: String(getVal(m, 'CreatedBy') || getVal(m, 'createdBy') || 'admin'),
                 // ⚠️ 不可用 `||`：當 DB 回 IsEnabled=false 時會被當成 falsy 而 fallback 到 undefined，
                 // 解析回來反而變成 true，造成「狀態切換 OFF 看起來沒生效」。改用 `??` 只在 null/undefined 才 fallback。
@@ -397,15 +398,19 @@ export async function fetchInitialDataFromDB() {
         });
 
         // 5. 轉換 Apps
-        let mappedApps = appData.map(a => ({
-            id: String(getVal(a, 'AppId') || ''),
-            menuId: String(getVal(a, 'MenuId') || ''),
-            name: String(getVal(a, 'AppName') || getVal(a, 'name') || ''),
-            appName: String(getVal(a, 'AppName') || getVal(a, 'name') || ''),
-            url: String(getVal(a, 'Url') || ''),
-            iconBase64: String(getVal(a, 'IconBase64') || ''),
-            target: String(getVal(a, 'Target') || '_blank')
-        }));
+        let mappedApps = appData.map(a => {
+            let iconVal = String(getVal(a, 'IconBase64') || getVal(a, 'iconBase64') || '');
+            return {
+                id: String(getVal(a, 'AppId') || ''),
+                menuId: String(getVal(a, 'MenuId') || ''),
+                name: String(getVal(a, 'AppName') || getVal(a, 'name') || ''),
+                appName: String(getVal(a, 'AppName') || getVal(a, 'name') || ''),
+                url: String(getVal(a, 'Url') || ''),
+                iconBase64: iconVal,
+                IconBase64: iconVal,
+                target: String(getVal(a, 'Target') || '_blank')
+            };
+        });
 
         // 6. 轉換 Requests
         let mappedReqs = reqData.map(r => ({
@@ -537,7 +542,7 @@ export function getDatabasePayload() {
         return {
             MenuId: safeStr(m.id, 50), SysName: safeStr(m.name, 100), DisplayName: safeStr(m.displayName, 100),
             MenuMode: safeStr(m.menuMode, 20) || 'link', Url: safeLongStr(m.url), TargetPage: safeStr(m.targetPage, 100),
-            OpenTarget: safeStr(m.target, 20), Icon: safeLongStr(m.icon), CreatedBy: safeStr(m.createdBy, 50) || 'admin',
+            OpenTarget: safeStr(m.target, 20), Icon: safeLongStr(m.icon || m.Icon), CreatedBy: safeStr(m.createdBy, 50) || 'admin',
             IsEnabled: m.enabled !== false, IsPoolItem: m.isPoolItem === true, IsEdited: m.isEdited === true, GlobalOrder: m.order || 0,
             ParentId: m.parentId ? String(m.parentId) : null,
             ParentIds: pIdsStr,
@@ -580,7 +585,7 @@ export function getDatabasePayload() {
 
     payload.Apps = apps.map(a => ({
         AppId: safeStr(a.id, 50), MenuId: safeStr(a.menuId, 50), AppName: safeStr(a.appName, 100),
-        Url: safeLongStr(a.url), IconBase64: safeLongStr(a.iconBase64), Target: safeStr(a.target, 20) || 'iframe'
+        Url: safeLongStr(a.url), IconBase64: safeLongStr(a.iconBase64 || a.IconBase64), Target: safeStr(a.target, 20) || 'iframe'
     }));
 
     payload.Requests = reqs.map(r => ({

@@ -2,7 +2,7 @@
 /* ================= 其他模組樣式 ================= */
 .page-section {
     display: none;
-    animation: fadeIn 0.1s ease-in-out;
+    animation: fadeInGlide 0.22s cubic-bezier(0.16, 1, 0.3, 1);
     flex: 1;
     min-height: 0;
     flex-direction: column;
@@ -12,13 +12,15 @@
         display: flex;
     }
 
-@keyframes fadeIn {
+@keyframes fadeInGlide {
     from {
         opacity: 0;
+        transform: translateY(6px);
     }
 
     to {
         opacity: 1;
+        transform: translateY(0);
     }
 }
 

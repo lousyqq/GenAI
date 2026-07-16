@@ -67,10 +67,11 @@
     <div class="top-navbar-group" id="top-navbar">
         <div class="navbar-row-top">
             <div class="nav-brand-section">
-                <button class="btn p-0 text-white me-3" style="opacity: 0.7;" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+                <button class="sidebar-toggle-btn me-3" onclick="toggleSidebar()" title="收合/展開側邊選單"><i class="fas fa-bars"></i></button>
                 <h1 class="nav-logo-text" onclick="goDefaultHome()" title="回預設首頁"><span class="text-info">UMC</span> GenAI</h1>
                 <div class="nav-breadcrumb-inline" id="top-breadcrumb">
-                    <i class="fas fa-satellite-dish me-1"></i>
+                    <span class="live-pulse-dot me-2" title="系統即時監控運作中"></span>
+                    <i class="fas fa-satellite-dish me-1 text-info opacity-75"></i>
                     <span id="bc-path" style="display:none;"></span><span class="current" id="bc-name" data-i18n="nav_breadcrumb_home">首頁總覽</span>
                 </div>
             </div>
@@ -87,7 +88,7 @@
 
                 <div class="dropdown ms-1">
                     <button class="btn border-0 p-0 d-flex align-items-center text-white" type="button" data-bs-toggle="dropdown">
-                        <div class="d-none d-md-block text-end lh-1 me-2"><div class="fw-bold" style="font-size: 0.85rem;" id="user-name">載入中...</div><div class="text-white-50 mt-1" style="font-size: 0.7rem;" id="user-role">Role</div></div><i class="fas fa-user-circle fs-4 text-white opacity-75"></i>
+                        <div class="d-none d-md-block text-end lh-1 me-2"><div class="fw-bold" style="font-size: 0.85rem;" id="user-name">載入中...</div><div class="mt-1" style="font-size: 0.76rem; color: #cbd5e1; font-weight: 600; letter-spacing: 0.3px;" id="user-role">Role</div></div><i class="fas fa-user-circle fs-4 text-info" style="filter: drop-shadow(0 0 5px rgba(56,189,248,0.5));"></i>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2 p-0" style="width: 310px; border-radius: 8px; overflow: hidden;">
                         <!-- Round-5 B4 修：<span data-i18n="..."> 全部閉合，避免 i18n 切換時把後面 badge 一起吃掉 -->

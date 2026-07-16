@@ -23,10 +23,19 @@ import { appState } from '../store.js?v=20260607k';
 //   trim/lowercase + 把不可見字元 (\t \n \r \0 空白) 全部去掉再比，避免 `java\tscript:` 之類繞過。
 window.safeExternalUrl = function(url) {
     if (!url) return '#';
-    const cleaned = String(url).replace(/[\s\u0000-\u001f]/g, '').toLowerCase();
+    const raw = String(url).trim();
+    const cleaned = raw.replace(/[\s\u0000-\u001f]/g, '').toLowerCase();
     if (cleaned === '') return '#';
-    if (cleaned.startsWith('http://') || cleaned.startsWith('https://') || cleaned.startsWith('/')) {
-        return String(url); // 通過驗證，回原值 (保留大小寫 query string 等)
+    // 明確阻斷危險偽協定
+    if (cleaned.startsWith('javascript:') || cleaned.startsWith('data:') || cleaned.startsWith('vbscript:') || cleaned.startsWith('file:')) {
+        return '#';
+    }
+    if (cleaned.startsWith('http://') || cleaned.startsWith('https://') || cleaned.startsWith('/') || cleaned.startsWith('page-')) {
+        return raw;
+    }
+    // 容錯：當用戶填寫網址未帶協定 (如 p58esiap12/xxx 或 localhost:5000/xxx)，自動補上 http://
+    if (!cleaned.includes(':') || /^[a-z0-9.-]+:[0-9]+(\/|$)/i.test(cleaned)) {
+        return 'http://' + raw;
     }
     return '#';
 };
@@ -697,12 +706,12 @@ export function renderAppGrid(containerId, appList) {
         const aName = window.escapeHTML(app.name || app.AppName);
         const aUrl = window.escapeHTML(app.url || app.Url);
         let imgHtml = (app.iconBase64 || app.IconBase64) ? `<img src="${window.escapeHTML(app.iconBase64 || app.IconBase64)}" class="app-icon-img" alt="${aName}">` : `<i class="fas fa-cube text-muted" style="font-size:2rem;"></i>`;
-        let aTargetVal = (app.target || app.Target);
-        let actionAttr = aTargetVal === 'iframe'
-            ? `data-action="open-iframe" data-url="${aUrl}" data-name="${aName}"`
+        let aTargetVal = (app.target || app.Target || 'iframe');
+        let actionAttr = (aTargetVal === 'iframe' || aTargetVal === 'iframe_fullscreen')
+            ? `data-action="open-iframe" data-url="${aUrl}" data-name="${aName}" data-target="${aTargetVal}"`
             : (aTargetVal === 'ie'
                 ? `data-action="open-ie" data-url="${aUrl}"`
-                : `data-action="open-url" data-url="${aUrl}"`);
+                : `data-action="open-url" data-url="${aUrl}" data-target="${aTargetVal}"`);
         const actionsHtml = viewerOnly ? '' : `<div class="app-actions d-flex flex-nowrap justify-content-center gap-2"><button class="app-btn-action app-btn-edit" data-action="edit-app" data-id="${window.escapeHTML(app.id || app.AppId)}"><i class="fas fa-pencil-alt"></i></button><button class="app-btn-action app-btn-delete" data-action="delete-app" data-id="${window.escapeHTML(app.id || app.AppId)}"><i class="fas fa-times"></i></button></div>`;
         html += `<div class="app-card" title="${aName}">${actionsHtml}<div class="app-icon-box" ${actionAttr}>${imgHtml}</div><div class="app-name" ${actionAttr}>${aName}</div></div>`;
     });

@@ -17,6 +17,7 @@ public class SettingsService : ISettingsService
     private readonly Microsoft.Extensions.Caching.Memory.IMemoryCache _cache;
     private readonly GenAI.Data.AppDbContext _dbContext;
     private readonly IInitialDataCacheInvalidator _cacheInvalidator;
+    private readonly GenAI.Services.Interfaces.IIconStorageService _iconStorage;
     private static readonly SemaphoreSlim _semaphore = new(1, 1);
 
     // 快取 key 與 ETag 已移交 IInitialDataCacheInvalidator（Singleton）統一持有，
@@ -41,7 +42,7 @@ public class SettingsService : ISettingsService
 
     public string GetCurrentETag() => _cacheInvalidator.CurrentETag;
 
-    public SettingsService(IConfiguration config, ILogger<SettingsService> logger, Microsoft.Extensions.Caching.Memory.IMemoryCache cache, GenAI.Data.AppDbContext dbContext, IInitialDataCacheInvalidator cacheInvalidator)
+    public SettingsService(IConfiguration config, ILogger<SettingsService> logger, Microsoft.Extensions.Caching.Memory.IMemoryCache cache, GenAI.Data.AppDbContext dbContext, IInitialDataCacheInvalidator cacheInvalidator, GenAI.Services.Interfaces.IIconStorageService iconStorage)
     {
         _connStr = config.GetConnectionString("GenAI")
             ?? throw new InvalidOperationException("Missing connection string 'GenAI'");
@@ -49,6 +50,7 @@ public class SettingsService : ISettingsService
         _cache = cache;
         _dbContext = dbContext;
         _cacheInvalidator = cacheInvalidator;
+        _iconStorage = iconStorage;
     }
 
     public async Task<Dictionary<string, object>> GetInitialDataAsync(string empId)
@@ -384,52 +386,70 @@ public class SettingsService : ISettingsService
                     foreach (var prop in row)
                     {
                         string colName = prop.Key;
-                        if (!dt.Columns.Contains(colName)) continue;
+                        var actualCol = dt.Columns.Cast<DataColumn>().FirstOrDefault(c => c.ColumnName.Equals(colName, StringComparison.OrdinalIgnoreCase));
+                        if (actualCol == null) continue;
 
                         JsonElement val = prop.Value;
                         if (val.ValueKind == JsonValueKind.Null || val.ValueKind == JsonValueKind.Undefined)
                         {
-                            newRow[colName] = DBNull.Value;
+                            if (newRow[actualCol] == DBNull.Value) newRow[actualCol] = DBNull.Value;
                             continue;
                         }
 
                         string strVal = val.ToString();
                         if (string.IsNullOrEmpty(strVal))
                         {
-                            newRow[colName] = DBNull.Value;
+                            if (newRow[actualCol] == DBNull.Value) newRow[actualCol] = DBNull.Value;
                             continue;
                         }
 
-                        string dbType = columnTypes.ContainsKey(colName) ? columnTypes[colName] : "";
+                        // ⭐️ 大小寫重複欄位保護（例如 JSON 中同時有 IconBase64 實體路徑與 iconBase64 空字串），若已有有效值則不上蓋空字串
+                        if (newRow[actualCol] != DBNull.Value && !string.IsNullOrEmpty(newRow[actualCol]?.ToString()))
+                        {
+                            continue;
+                        }
+
+                        // ⭐️ 若為 Apps 或 Menus 的圖標欄位且帶有 data: base64，立即轉存為 /images/icons/*.jpg 實體圖檔
+                        if (strVal.StartsWith("data:", StringComparison.OrdinalIgnoreCase) && _iconStorage != null)
+                        {
+                            if ((tableName.Equals("Apps", StringComparison.OrdinalIgnoreCase) && actualCol.ColumnName.Equals("IconBase64", StringComparison.OrdinalIgnoreCase)) ||
+                                (tableName.Equals("Menus", StringComparison.OrdinalIgnoreCase) && actualCol.ColumnName.Equals("Icon", StringComparison.OrdinalIgnoreCase)))
+                            {
+                                var savedUrl = await _iconStorage.SaveAsync(strVal);
+                                if (!string.IsNullOrEmpty(savedUrl)) strVal = savedUrl;
+                            }
+                        }
+
+                        string dbType = columnTypes.ContainsKey(actualCol.ColumnName) ? columnTypes[actualCol.ColumnName] : "";
                         if (dbType.Contains("char") || dbType.Contains("text"))
                         {
-                            int maxLen = columnMaxLengths.ContainsKey(colName) ? columnMaxLengths[colName] : 0;
+                            int maxLen = columnMaxLengths.ContainsKey(actualCol.ColumnName) ? columnMaxLengths[actualCol.ColumnName] : 0;
                             if (maxLen > 0 && maxLen < 10000000 && strVal.Length > maxLen)
                                 strVal = strVal[..maxLen];
-                            newRow[colName] = strVal;
+                            newRow[actualCol] = strVal;
                         }
                         else if (dbType.Contains("bit"))
                         {
-                            newRow[colName] = (val.ValueKind == JsonValueKind.True || strVal.Equals("true", StringComparison.OrdinalIgnoreCase) || strVal == "1");
+                            newRow[actualCol] = (val.ValueKind == JsonValueKind.True || strVal.Equals("true", StringComparison.OrdinalIgnoreCase) || strVal == "1");
                         }
                         else if (dbType.Contains("int"))
                         {
-                            if (long.TryParse(strVal, out long parsedLong)) newRow[colName] = parsedLong;
-                            else newRow[colName] = DBNull.Value;
+                            if (long.TryParse(strVal, out long parsedLong)) newRow[actualCol] = parsedLong;
+                            else newRow[actualCol] = DBNull.Value;
                         }
                         else if (dbType.Contains("float") || dbType.Contains("decimal") || dbType.Contains("numeric"))
                         {
-                            if (double.TryParse(strVal, out double parsedDouble)) newRow[colName] = parsedDouble;
-                            else newRow[colName] = DBNull.Value;
+                            if (double.TryParse(strVal, out double parsedDouble)) newRow[actualCol] = parsedDouble;
+                            else newRow[actualCol] = DBNull.Value;
                         }
                         else if (dbType.Contains("date") || dbType.Contains("time"))
                         {
-                            if (DateTime.TryParse(strVal, out DateTime parsedDate)) newRow[colName] = parsedDate;
-                            else newRow[colName] = DBNull.Value;
+                            if (DateTime.TryParse(strVal, out DateTime parsedDate)) newRow[actualCol] = parsedDate;
+                            else newRow[actualCol] = DBNull.Value;
                         }
                         else
                         {
-                            newRow[colName] = strVal;
+                            newRow[actualCol] = strVal;
                         }
                     }
                     dt.Rows.Add(newRow);

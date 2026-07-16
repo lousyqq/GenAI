@@ -100,6 +100,7 @@ export async function savePersonalMenu(e) {
 
         pSets[id].hidden = !document.getElementById('personalMenuVisible').checked;
         pSets[id].icon = getSelectedIconVal('personalMenu');
+        pSets[id].Icon = pSets[id].icon;
 
         const target = document.getElementById('personalMenuTarget').value;
         if (target) pSets[id].target = target; else delete pSets[id].target;
@@ -191,6 +192,7 @@ export async function saveWebpageItem(e) {
         mObj.displayName = document.getElementById('wpDisplayName').value.trim();
         mObj.menuMode = isAppGrid ? 'app_grid' : 'link';
         mObj.icon = getSelectedIconVal('wp');
+        mObj.Icon = mObj.icon;
         if (!id) mObj.enabled = true;
         mObj.isEdited = true;
         if (id) mObj.isPoolItem = true;
@@ -506,6 +508,7 @@ export async function saveMenuNodeItem(e) {
         mObj.displayName = document.getElementById('nodeDisplayName').value.trim();
         mObj.menuMode = isFolder ? 'folder' : 'link';
         mObj.icon = getSelectedIconVal('node');
+        mObj.Icon = mObj.icon;
         mObj.isEdited = true;
 
         // 收 ACL

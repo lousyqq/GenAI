@@ -130,10 +130,23 @@ document.addEventListener('click', function(e) {
     const openUrlBtn = e.target.closest('[data-action="open-url"]');
     if (openUrlBtn) {
         let url = openUrlBtn.getAttribute('data-url');
+        let target = openUrlBtn.getAttribute('data-target') || 'blank';
         // ⚠️ 改用 safeExternalUrl：舊版只擋 startsWith('javascript:')，會被 `\tjavascript:` / `data:text/html` 等繞過
         const safe = (typeof window.safeExternalUrl === 'function') ? window.safeExternalUrl(url) : url;
         if (safe && safe !== '#') {
-            window.open(safe, '_blank', 'noopener,noreferrer');
+            if (target === 'fullscreen') {
+                const w = screen.availWidth || window.screen.width || 1920;
+                const h = screen.availHeight || window.screen.height || 1080;
+                window.open(safe, '_blank', `width=${w},height=${h},top=0,left=0,resizable=yes,scrollbars=yes,status=yes`);
+            } else if (target === 'popup') {
+                const w = Math.min(1024, (screen.availWidth || 1280) - 100);
+                const h = Math.min(768, (screen.availHeight || 800) - 100);
+                const left = Math.round(((screen.availWidth || 1280) - w) / 2);
+                const top = Math.round(((screen.availHeight || 800) - h) / 2);
+                window.open(safe, '_blank', `width=${w},height=${h},top=${top},left=${left},resizable=yes,scrollbars=yes,status=yes`);
+            } else {
+                window.open(safe, '_blank', 'noopener,noreferrer');
+            }
         }
         return;
     }
@@ -151,9 +164,11 @@ document.addEventListener('click', function(e) {
     if (openIframeBtn) {
         let url = openIframeBtn.getAttribute('data-url');
         let name = openIframeBtn.getAttribute('data-name');
+        let target = openIframeBtn.getAttribute('data-target') || 'iframe';
         const safeIfr = (typeof window.safeExternalUrl === 'function') ? window.safeExternalUrl(url) : url;
         if (safeIfr && safeIfr !== '#') {
-            if (typeof window.openDynamicIframe === 'function') window.openDynamicIframe(safeIfr, name, null, false);
+            const isFull = (target === 'iframe_fullscreen');
+            if (typeof window.openDynamicIframe === 'function') window.openDynamicIframe(safeIfr, name, null, isFull);
         }
         return;
     }
@@ -201,7 +216,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             isDbLoaded = await fetchInitialDataFromDB();
         }
 
-        clearTimeout(loadingTimeoutId);
         loadingOverlay.remove();
         initModalInstances();
 

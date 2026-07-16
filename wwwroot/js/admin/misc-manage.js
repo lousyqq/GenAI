@@ -312,12 +312,22 @@ export async function saveAppItem(e) {
         if (id) {
             let idx = apps.findIndex(a => window.cleanId(a.id) === window.cleanId(id));
             if (idx > -1) { 
-                apps[idx].name = name; apps[idx].url = url; apps[idx].target = target; apps[idx].iconBase64 = finalIcon; 
+                apps[idx].name = name; apps[idx].appName = name; apps[idx].AppName = name;
+                apps[idx].url = url; apps[idx].Url = url;
+                apps[idx].target = target; apps[idx].Target = target;
+                apps[idx].iconBase64 = finalIcon; apps[idx].IconBase64 = finalIcon; 
                 appData = apps[idx];
             }
         } else {
             isNew = true;
-            appData = { id: 'app_' + Date.now(), menuId: appState.currentAppGridMenuId, name: name, url: url, target: target, iconBase64: finalIcon };
+            appData = { 
+                id: 'app_' + Date.now(), AppId: 'app_' + Date.now(),
+                menuId: appState.currentAppGridMenuId, MenuId: appState.currentAppGridMenuId,
+                name: name, appName: name, AppName: name,
+                url: url, Url: url,
+                target: target, Target: target,
+                iconBase64: finalIcon, IconBase64: finalIcon 
+            };
             apps.push(appData);
         }
 
@@ -332,6 +342,7 @@ export async function saveAppItem(e) {
         }
 
         hideModalSafely('appGridModal');
+        try { await window.fetchInitialDataFromDB(); } catch (e) { console.error('fetchInitialDataFromDB 失敗', e); }
         if (appState.currentAppGridMenuId && typeof renderAppGrid === 'function') renderAppGrid('app-grid-container', getAppItems().filter(a => window.cleanId(a.menuId) === window.cleanId(appState.currentAppGridMenuId)));
 
     } catch (error) { console.error("[saveAppItem] 錯誤:", error); }
@@ -353,7 +364,8 @@ export function deleteAppItem(id) {
                 return false;
             }
 
-            if (appState.currentAppGridMenuId && typeof renderAppGrid === 'function') renderAppGrid('app-grid-container', apps.filter(a => window.cleanId(a.menuId) === window.cleanId(appState.currentAppGridMenuId)));
+            try { await window.fetchInitialDataFromDB(); } catch (e) { console.error('fetchInitialDataFromDB 失敗', e); }
+            if (appState.currentAppGridMenuId && typeof renderAppGrid === 'function') renderAppGrid('app-grid-container', getAppItems().filter(a => window.cleanId(a.menuId) === window.cleanId(appState.currentAppGridMenuId)));
         });
     } catch (e) { console.error("[deleteAppItem] 錯誤:", e); }
 }

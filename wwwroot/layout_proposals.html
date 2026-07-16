@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UMC GenAI — 投影機版面重構提案（3 範本）</title>
+<style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+        font-family: 'Segoe UI', 'Microsoft JhengHei', Tahoma, sans-serif;
+        background: #f1f5f9;
+        color: #1e293b;
+        line-height: 1.6;
+    }
+
+    /* ============ 頁首 ============ */
+    .hero {
+        background: linear-gradient(135deg, #0b1120 0%, #16233f 100%);
+        color: #fff;
+        padding: 36px 48px 28px;
+        border-bottom: 4px solid #38bdf8;
+    }
+    .hero h1 { font-size: 1.6rem; font-weight: 800; letter-spacing: 1px; }
+    .hero h1 .accent { color: #7dd3fc; }
+    .hero p { color: #cbd5e1; margin-top: 8px; max-width: 900px; font-size: 0.95rem; }
+    .goal-chips { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+    .chip {
+        background: rgba(56,189,248,0.12);
+        border: 1px solid #38bdf8;
+        color: #7dd3fc;
+        border-radius: 30px;
+        padding: 5px 16px;
+        font-size: 0.82rem;
+        font-weight: 700;
+    }
+
+    /* ============ 範本切換列 ============ */
+    .tab-bar {
+        position: sticky; top: 0; z-index: 100;
+        background: #fff;
+        border-bottom: 2px solid #cbd5e1;
+        display: flex;
+        padding: 0 48px;
+        box-shadow: 0 2px 10px rgba(15,23,42,0.08);
+        overflow-x: auto;
+    }
+    .tab-btn {
+        border: none; background: none; cursor: pointer;
+        padding: 14px 22px;
+        font-size: 0.95rem; font-weight: 700; color: #475569;
+        border-bottom: 4px solid transparent;
+        white-space: nowrap;
+        transition: all .15s;
+    }
+    .tab-btn:hover { color: #0f172a; background: #f8fafc; }
+    .tab-btn.active { color: #0369a1; border-bottom-color: #0284c7; }
+    .tab-btn .num {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 22px; height: 22px; border-radius: 50%;
+        background: #e2e8f0; color: #475569; font-size: 0.75rem; margin-right: 8px;
+    }
+    .tab-btn.active .num { background: #0284c7; color: #fff; }
+
+    .section { display: none; padding: 32px 48px 24px; max-width: 1400px; margin: 0 auto; }
+    .section.active { display: block; }
+
+    /* ============ 說明卡 ============ */
+    .spec-row { display: grid; grid-template-columns: 1fr 340px; gap: 20px; margin-bottom: 20px; }
+    @media (max-width: 1000px) { .spec-row { grid-template-columns: 1fr; } }
+    .spec-card {
+        background: #fff; border: 1px solid #cbd5e1; border-radius: 10px; padding: 20px 24px;
+    }
+    .spec-card h2 { font-size: 1.25rem; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+    .spec-card .subtitle { color: #64748b; font-size: 0.88rem; margin-bottom: 12px; }
+    .spec-card ul { padding-left: 20px; font-size: 0.9rem; }
+    .spec-card li { margin-bottom: 6px; }
+    .spec-card li strong { color: #0369a1; }
+
+    .stat-card {
+        background: #0b1120; color: #fff; border-radius: 10px; padding: 20px 24px;
+        display: flex; flex-direction: column; justify-content: center; gap: 14px;
+    }
+    .stat-item { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid rgba(255,255,255,0.12); padding-bottom: 10px; }
+    .stat-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .stat-label { font-size: 0.82rem; color: #94c9e8; font-weight: 700; }
+    .stat-value { font-size: 1.5rem; font-weight: 800; color: #7dd3fc; }
+    .stat-value small { font-size: 0.75rem; color: #cbd5e1; font-weight: 400; margin-left: 4px; }
+
+    /* ============ Mock 共用 ============ */
+    .mock {
+        aspect-ratio: 16 / 9;
+        border: 3px solid #334155;
+        border-radius: 12px;
+        overflow: hidden;
+        background: #f8fafc;
+        display: flex; flex-direction: column;
+        box-shadow: 0 16px 40px rgba(15,23,42,0.18);
+        position: relative;
+    }
+    .mock-caption { text-align: center; color: #64748b; font-size: 0.82rem; margin: 10px 0 0; }
+
+    .content-area {
+        flex: 1;
+        background:
+            linear-gradient(rgba(2,132,199,0.05), rgba(2,132,199,0.05)),
+            repeating-linear-gradient(45deg, #f0f9ff 0 24px, #e0f2fe 24px 48px);
+        display: flex; align-items: center; justify-content: center;
+        flex-direction: column; gap: 8px;
+        border: 2px dashed #7dd3fc;
+        margin: 0;
+    }
+    .content-area .pct { font-size: 2.6rem; font-weight: 900; color: #0369a1; letter-spacing: 1px; }
+    .content-area .desc { font-size: 0.95rem; font-weight: 700; color: #075985; }
+    .content-area .hint { font-size: 0.78rem; color: #0c4a6e; opacity: 0.75; }
+
+    /* ============ 範本 A：精簡單列導覽 ============ */
+    .navA {
+        height: 44px; background: #0b1120; color: #fff;
+        display: flex; align-items: center; padding: 0 16px; gap: 14px;
+        flex-shrink: 0;
+    }
+    .navA .burger { color: #fff; font-size: 1rem; opacity: .85; }
+    .navA .logo { font-weight: 900; font-size: 0.95rem; white-space: nowrap; }
+    .navA .logo .u { color: #7dd3fc; }
+    .navA .tabs { display: flex; gap: 2px; height: 100%; align-items: stretch; margin-left: 8px; overflow: hidden; }
+    .navA .tab {
+        display: flex; align-items: center; padding: 0 14px;
+        color: #ffffff; font-weight: 700; font-size: 0.82rem;
+        border-bottom: 3px solid transparent; white-space: nowrap;
+    }
+    .navA .tab.on { background: #1d3a5f; border-bottom-color: #38bdf8; color: #fff; }
+    .navA .spacer { flex: 1; }
+    .navA .crumb { color: #ffffff; font-size: 0.8rem; font-weight: 700; background: rgba(56,189,248,0.18); border: 1px solid rgba(56,189,248,0.5); padding: 3px 12px; border-radius: 20px; white-space: nowrap; }
+    .navA .user { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; font-weight: 700; white-space: nowrap; }
+    .navA .avatar { width: 24px; height: 24px; border-radius: 50%; background: #38bdf8; color: #0b1120; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 900; }
+
+    .bodyA { flex: 1; display: flex; min-height: 0; }
+    .sideA {
+        width: 17%; min-width: 150px; background: #fff; border-right: 2px solid #cbd5e1;
+        display: flex; flex-direction: column; flex-shrink: 0;
+    }
+    .sideA .side-head {
+        background: #dbe5f0; color: #0f172a; font-weight: 800; font-size: 0.78rem;
+        padding: 8px 14px; border-bottom: 2px solid #b6c6d8;
+        display: flex; justify-content: space-between; align-items: center;
+    }
+    .sideA .side-head .collapse-btn { color: #0369a1; font-weight: 900; cursor: pointer; }
+    .sideA .item { padding: 8px 14px; font-size: 0.8rem; font-weight: 700; color: #0f172a; border-left: 4px solid transparent; }
+    .sideA .item.on { background: #dbeafe; border-left-color: #1d4ed8; color: #1d4ed8; }
+    .sideA .item.sub { padding-left: 30px; font-weight: 600; color: #334155; font-size: 0.76rem; }
+
+    /* ============ 範本 B：圖示側欄 ============ */
+    .bodyB { flex: 1; display: flex; min-height: 0; }
+    .railB {
+        width: 56px; background: #0b1120; display: flex; flex-direction: column;
+        align-items: center; padding: 10px 0; gap: 4px; flex-shrink: 0;
+    }
+    .railB .rail-logo { color: #7dd3fc; font-weight: 900; font-size: 0.72rem; margin-bottom: 10px; text-align: center; line-height: 1.2; }
+    .railB .rail-item {
+        width: 42px; height: 38px; border-radius: 8px;
+        display: flex; align-items: center; justify-content: center;
+        color: #ffffff; font-size: 0.7rem; font-weight: 800;
+    }
+    .railB .rail-item.on { background: #0284c7; color: #fff; box-shadow: inset 0 0 0 2px #7dd3fc; }
+    .railB .rail-bottom { margin-top: auto; display: flex; flex-direction: column; gap: 4px; align-items: center; }
+    .topB {
+        height: 40px; background: #ffffff; border-bottom: 2px solid #cbd5e1;
+        display: flex; align-items: center; padding: 0 16px; gap: 12px; flex-shrink: 0;
+    }
+    .topB .title { font-weight: 800; color: #0f172a; font-size: 0.88rem; }
+    .topB .path { color: #475569; font-size: 0.78rem; font-weight: 600; }
+    .topB .spacer { flex: 1; }
+    .topB .user { font-size: 0.78rem; font-weight: 700; color: #0f172a; }
+    .colB { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+    .flyoutB {
+        position: absolute; left: 56px; top: 0; bottom: 0; width: 190px;
+        background: #16233f; color: #fff; padding: 12px 0;
+        box-shadow: 6px 0 20px rgba(0,0,0,0.35);
+        border-right: 2px solid #38bdf8;
+    }
+    .flyoutB .fly-title { font-size: 0.72rem; color: #7dd3fc; font-weight: 800; padding: 0 16px 8px; letter-spacing: 1px; }
+    .flyoutB .fly-item { padding: 8px 16px; font-size: 0.8rem; font-weight: 700; color: #ffffff; }
+    .flyoutB .fly-item.on { background: #0284c7; }
+    .flyout-note {
+        position: absolute; left: 260px; top: 54%; background: #0f172a; color: #7dd3fc;
+        font-size: 0.72rem; font-weight: 700; padding: 6px 12px; border-radius: 6px;
+        border: 1px solid #38bdf8;
+    }
+
+    /* ============ 範本 C：沉浸簡報 ============ */
+    .mockC { background: #f8fafc; }
+    .pillC {
+        position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+        background: rgba(11,17,32,0.92); color: #fff; border-radius: 30px;
+        padding: 7px 22px; display: flex; align-items: center; gap: 14px;
+        font-size: 0.82rem; font-weight: 800; box-shadow: 0 6px 18px rgba(0,0,0,0.3);
+        border: 1px solid rgba(125,211,252,0.6); z-index: 5;
+    }
+    .pillC .dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 6px #22c55e; }
+    .pillC .logo .u { color: #7dd3fc; }
+    .pillC .divider { width: 1px; height: 14px; background: rgba(255,255,255,0.35); }
+    .pillC .clock { color: #cbd5e1; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .edgeC-top {
+        position: absolute; top: 0; left: 0; right: 0; height: 6px;
+        background: linear-gradient(to bottom, rgba(56,189,248,0.65), transparent); z-index: 4;
+    }
+    .hintC {
+        position: absolute; bottom: 14px; right: 18px;
+        background: rgba(11,17,32,0.85); color: #cbd5e1; font-size: 0.72rem; font-weight: 600;
+        padding: 5px 14px; border-radius: 20px; z-index: 5;
+    }
+
+    /* ============ 配色準則 ============ */
+    .rules-wrap { padding: 12px 48px 48px; max-width: 1400px; margin: 0 auto; }
+    .rules-title { font-size: 1.3rem; font-weight: 800; color: #0f172a; margin: 24px 0 6px; }
+    .rules-sub { color: #64748b; font-size: 0.9rem; margin-bottom: 18px; }
+    .swatch-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+    .swatch-card { background: #fff; border: 1px solid #cbd5e1; border-radius: 10px; overflow: hidden; }
+    .swatch-card .head { padding: 10px 16px; font-weight: 800; font-size: 0.85rem; display: flex; align-items: center; gap: 8px; }
+    .swatch-card.bad .head { background: #fef2f2; color: #b91c1c; border-bottom: 1px solid #fecaca; }
+    .swatch-card.good .head { background: #f0fdf4; color: #15803d; border-bottom: 1px solid #bbf7d0; }
+    .swatch-demo { padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+    .demo-row { border-radius: 8px; padding: 10px 16px; font-weight: 700; font-size: 0.9rem; display: flex; justify-content: space-between; align-items: center; }
+    .demo-row .ratio { font-size: 0.72rem; font-weight: 800; padding: 2px 10px; border-radius: 12px; background: rgba(255,255,255,0.9); color: #0f172a; }
+    .swatch-note { padding: 0 16px 14px; font-size: 0.8rem; color: #475569; }
+
+    .rule-table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 10px; overflow: hidden; border: 1px solid #cbd5e1; font-size: 0.88rem; }
+    .rule-table th { background: #0b1120; color: #fff; padding: 10px 16px; text-align: left; font-size: 0.82rem; letter-spacing: 1px; }
+    .rule-table td { padding: 10px 16px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+    .rule-table tr:last-child td { border-bottom: none; }
+    .rule-table .no { color: #b91c1c; font-weight: 700; }
+    .rule-table .yes { color: #15803d; font-weight: 700; }
+
+    .verdict {
+        margin-top: 28px; background: #0b1120; color: #fff; border-radius: 12px;
+        padding: 24px 28px; border-left: 6px solid #38bdf8;
+    }
+    .verdict h3 { color: #7dd3fc; font-size: 1.1rem; margin-bottom: 10px; }
+    .verdict p { font-size: 0.92rem; color: #e2e8f0; margin-bottom: 8px; }
+    .verdict strong { color: #fff; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+    <h1><span class="accent">UMC GenAI</span> 投影機版面重構提案</h1>
+    <p>目標：在大螢幕投影環境下呈現專業、高對比的入口框架，並將最大空間讓給嵌入式看板內容 — 框架是配角，內容才是主角。以下 3 個範本由「改動最小」到「最沉浸」排列，可依簡報場景混用（範本 A 為日常操作、範本 C 為投影展示）。</p>
+    <div class="goal-chips">
+        <span class="chip">投影機高對比（實色、無半透明文字）</span>
+        <span class="chip">內容占比 85% → 100%</span>
+        <span class="chip">框架極簡、不喧賓奪主</span>
+        <span class="chip">保留現有選單/權限機制</span>
+    </div>
+</div>
+
+<div class="tab-bar">
+    <button class="tab-btn active" onclick="show(0,this)"><span class="num">A</span>精簡單列導覽（推薦首選）</button>
+    <button class="tab-btn" onclick="show(1,this)"><span class="num">B</span>圖示側欄 Icon Rail</button>
+    <button class="tab-btn" onclick="show(2,this)"><span class="num">C</span>沉浸簡報模式</button>
+</div>
+
+<!-- ================= 範本 A ================= -->
+<div class="section active" id="sec0">
+    <div class="spec-row">
+        <div class="spec-card">
+            <h2>範本 A｜精簡單列導覽列</h2>
+            <div class="subtitle">把現有雙列 72px 導覽列合併為一列 44px，主選單頁籤直接放在 Logo 旁；側欄保留但可一鍵收合。改動成本最低、日常操作體驗不變。</div>
+            <ul>
+                <li><strong>導覽列 72px → 44px</strong>：Logo、主選單頁籤、麵包屑、使用者資訊全部單列排開。</li>
+                <li><strong>選單文字改實色白 #FFFFFF + 粗體</strong>，active 用實色底 <strong>#1D3A5F</strong> + 3px 亮青色底線，投影機上輪廓清晰。</li>
+                <li><strong>側欄可一鍵收合</strong>（現有 toggleSidebar 已具備）：收合後內容直接吃滿整寬。</li>
+                <li><strong>iframe 頁隱藏 iframe-header</strong>：頁面標題已在導覽列麵包屑呈現，不重複占 33px。</li>
+                <li>意見箱、系統設定收進右側工具區，不佔獨立列。</li>
+            </ul>
+        </div>
+        <div class="stat-card">
+            <div class="stat-item"><span class="stat-label">內容占比（1920×1080）</span><span class="stat-value">85.6%<small>展開側欄</small></span></div>
+            <div class="stat-item"><span class="stat-label">收合側欄後</span><span class="stat-value">95.6%</span></div>
+            <div class="stat-item"><span class="stat-label">改動成本</span><span class="stat-value" style="font-size:1.1rem;">低<small>CSS + navbar HTML 微調</small></span></div>
+        </div>
+    </div>
+
+    <div class="mock">
+        <div class="navA">
+            <span class="burger">☰</span>
+            <span class="logo"><span class="u">UMC</span> GenAI</span>
+            <div class="tabs">
+                <span class="tab on">DF1</span><span class="tab">DF2</span><span class="tab">DF3</span><span class="tab">DF4</span>
+                <span class="tab">ET1</span><span class="tab">ET2</span><span class="tab">LT3</span><span class="tab">TF1</span><span class="tab">TF6</span>
+            </div>
+            <span class="spacer"></span>
+            <span class="crumb">DF1 › CMP 即時看板</span>
+            <span class="user"><span class="avatar">Y</span>00058897</span>
+            <span style="color:#94c9e8; font-size:0.85rem;">⚙</span>
+        </div>
+        <div class="bodyA">
+            <div class="sideA">
+                <div class="side-head">模組目錄 <span class="collapse-btn">⟨⟨</span></div>
+                <div class="item on">▦ CMP 即時看板</div>
+                <div class="item sub">研磨均勻度趨勢</div>
+                <div class="item sub">漿料流量監控</div>
+                <div class="item">▦ Litho 對位分析</div>
+                <div class="item">▦ Etch 蝕刻率</div>
+                <div class="item">▦ AI 異常偵測</div>
+            </div>
+            <div class="content-area">
+                <div class="pct">85.6%</div>
+                <div class="desc">嵌入式看板內容區（iframe 滿版無邊）</div>
+                <div class="hint">按 ⟨⟨ 收合側欄 → 95.6%，投影時一鍵切換</div>
+            </div>
+        </div>
+    </div>
+    <div class="mock-caption">範本 A 示意 — 單列 44px 導覽 + 可收合側欄（比例為 1920×1080 等比示意）</div>
+</div>
+
+<!-- ================= 範本 B ================= -->
+<div class="section" id="sec1">
+    <div class="spec-row">
+        <div class="spec-card">
+            <h2>範本 B｜圖示側欄 Icon Rail</h2>
+            <div class="subtitle">仿 Azure Portal / Grafana 的企業級版型：左側 56px 深色圖示欄常駐，滑鼠懸停展開飛出選單；上方僅留 40px 淺色狀態列。左右視覺重心穩定、看起來最「產品化」。</div>
+            <ul>
+                <li><strong>側欄 200px → 56px 圖示欄</strong>：16 個 folder（DF1~TF6）以縮寫代號呈現，hover 飛出完整子選單（overlay，不推擠內容）。</li>
+                <li><strong>上方 40px 淺色列</strong>只放：目前頁面標題 + 路徑 + 使用者。深色圖示欄與淺色頂列形成 L 型框，專業感強。</li>
+                <li><strong>當前位置雙重標示</strong>：圖示欄亮藍底 + 頂列標題，主管掃一眼即知在哪個廠區模組。</li>
+                <li>適合子選單數量多、但同時只看一個看板的使用情境。</li>
+            </ul>
+        </div>
+        <div class="stat-card">
+            <div class="stat-item"><span class="stat-label">內容占比（1920×1080）</span><span class="stat-value">92.7%<small>常態</small></span></div>
+            <div class="stat-item"><span class="stat-label">飛出選單</span><span class="stat-value" style="font-size:1.1rem;">Overlay<small>不佔內容空間</small></span></div>
+            <div class="stat-item"><span class="stat-label">改動成本</span><span class="stat-value" style="font-size:1.1rem;">中<small>sidebar 重寫 + navbar 簡化</small></span></div>
+        </div>
+    </div>
+
+    <div class="mock">
+        <div class="bodyB">
+            <div class="railB">
+                <div class="rail-logo">UMC<br>GenAI</div>
+                <div class="rail-item on">DF1</div>
+                <div class="rail-item">DF2</div>
+                <div class="rail-item">ET1</div>
+                <div class="rail-item">ET2</div>
+                <div class="rail-item">LT3</div>
+                <div class="rail-item">TF1</div>
+                <div class="rail-item">TF6</div>
+                <div class="rail-bottom">
+                    <div class="rail-item">⚙</div>
+                    <div class="rail-item">👤</div>
+                </div>
+            </div>
+            <div class="colB">
+                <div class="topB">
+                    <span class="title">CMP 即時看板</span>
+                    <span class="path">DF1 › 製程監控</span>
+                    <span class="spacer"></span>
+                    <span class="user">00058897（admin）</span>
+                </div>
+                <div class="content-area">
+                    <div class="pct">92.7%</div>
+                    <div class="desc">嵌入式看板內容區（iframe 滿版無邊）</div>
+                    <div class="hint">左欄 hover 展開飛出選單，離開自動收回</div>
+                </div>
+            </div>
+            <div class="flyoutB">
+                <div class="fly-title">DF1 製程監控</div>
+                <div class="fly-item on">CMP 即時看板</div>
+                <div class="fly-item">研磨均勻度趨勢</div>
+                <div class="fly-item">漿料流量監控</div>
+                <div class="fly-item">設備稼動率</div>
+            </div>
+            <div class="flyout-note">← hover 時才出現的飛出選單（overlay）</div>
+        </div>
+    </div>
+    <div class="mock-caption">範本 B 示意 — 56px 圖示欄 + 40px 頂列，飛出選單以覆蓋方式呈現不推擠內容</div>
+</div>
+
+<!-- ================= 範本 C ================= -->
+<div class="section" id="sec2">
+    <div class="spec-row">
+        <div class="spec-card">
+            <h2>範本 C｜沉浸簡報模式（投影專用）</h2>
+            <div class="subtitle">內容 100% 滿版，僅保留一枚頂部浮動膠囊（Logo + 頁名 + 時鐘 + 連線狀態燈），數秒後自動淡出；滑鼠移到螢幕上緣喚出完整選單。給高階主管看的就是這一幕。</div>
+            <ul>
+                <li><strong>零常駐框架</strong>：navbar、sidebar 全部隱藏，靠現有 edge-trigger（上緣/左緣感應）喚出。</li>
+                <li><strong>浮動膠囊列</strong>：綠色連線燈讓主管確認「這是即時資料」；時鐘方便會議對時；閒置 5 秒自動淡出。</li>
+                <li><strong>建議做成一鍵切換</strong>：在範本 A/B 的工具區放「投影模式」按鈕（現有 FOCUS 全螢幕機制可直接升級），會議開始前按一下即可。</li>
+                <li>可加輪播：多看板每 N 分鐘自動切換，適合戰情室電視牆。</li>
+            </ul>
+        </div>
+        <div class="stat-card">
+            <div class="stat-item"><span class="stat-label">內容占比</span><span class="stat-value">100%</span></div>
+            <div class="stat-item"><span class="stat-label">框架露出</span><span class="stat-value" style="font-size:1.1rem;">浮動膠囊<small>自動淡出</small></span></div>
+            <div class="stat-item"><span class="stat-label">改動成本</span><span class="stat-value" style="font-size:1.1rem;">低<small>升級現有 FOCUS 模式</small></span></div>
+        </div>
+    </div>
+
+    <div class="mock mockC">
+        <div class="edgeC-top"></div>
+        <div class="pillC">
+            <span class="dot"></span>
+            <span class="logo"><span class="u">UMC</span> GenAI</span>
+            <span class="divider"></span>
+            <span>DF1 · CMP 即時看板</span>
+            <span class="divider"></span>
+            <span class="clock">14:32:05</span>
+        </div>
+        <div class="content-area" style="border:none;">
+            <div class="pct">100%</div>
+            <div class="desc">嵌入式看板內容（完全滿版）</div>
+            <div class="hint">膠囊列閒置 5 秒淡出｜滑鼠移至上緣喚出選單</div>
+        </div>
+        <div class="hintC">▲ 滑鼠移至螢幕上緣喚出導覽</div>
+    </div>
+    <div class="mock-caption">範本 C 示意 — 投影/戰情室專用，內容 100% 滿版</div>
+</div>
+
+<!-- ================= 配色準則 ================= -->
+<div class="rules-wrap">
+    <div class="rules-title">投影機高對比配色準則（三個範本共用）</div>
+    <div class="rules-sub">投影機亮度與色域遠低於螢幕，會議室環境光再吃掉一層對比 — 帳面上「還能看」的顏色到布幕上就是灰霧一片。原則：<strong>實色取代半透明、深色取代中間灰、粗體大字取代細小字</strong>。</div>
+
+    <div class="swatch-grid">
+        <div class="swatch-card bad">
+            <div class="head">✗ 現況 — 投影機上會發霧</div>
+            <div class="swatch-demo">
+                <div class="demo-row" style="background:#0b1120; color:rgba(255,255,255,0.55); font-size:11px;">選單文字 rgba(255,255,255,.55)・11px <span class="ratio">半透明+小字</span></div>
+                <div class="demo-row" style="background:#fff; color:#94a3b8; border:1px solid #e2e8f0;">輔助文字 #94a3b8 on 白底 <span class="ratio">2.6 : 1 ✗</span></div>
+                <div class="demo-row" style="background:#fff; color:#334155; border:1px solid #e2e8f0;">邊框 #e2e8f0（幾乎隱形）<span class="ratio">1.2 : 1 ✗</span></div>
+            </div>
+            <div class="swatch-note">半透明白 + 文字光暈（text-shadow glow）在投影機上會糊成一團；#94a3b8 等中間灰直接消失。</div>
+        </div>
+        <div class="swatch-card good">
+            <div class="head">✓ 建議 — 布幕上依然銳利</div>
+            <div class="swatch-demo">
+                <div class="demo-row" style="background:#0b1120; color:#ffffff;">選單文字 實色 #FFFFFF・粗體 <span class="ratio">18.8 : 1 ✓</span></div>
+                <div class="demo-row" style="background:#fff; color:#475569; border:1px solid #94a3b8;">輔助文字 #475569 on 白底 <span class="ratio">7.5 : 1 ✓</span></div>
+                <div class="demo-row" style="background:#0b1120; color:#7dd3fc;">強調色 #7DD3FC on 深藍 <span class="ratio">11.5 : 1 ✓</span></div>
+            </div>
+            <div class="swatch-note">主色維持 UMC 深藍 #0B1120 + 亮青 #38BDF8 的品牌感，只把「文字與邊界」全面換成實色高對比。</div>
+        </div>
+    </div>
+
+    <table class="rule-table" style="margin-top:20px;">
+        <thead><tr><th style="width:180px;">項目</th><th>現況（投影機痛點）</th><th>建議</th></tr></thead>
+        <tbody>
+            <tr><td><strong>選單/導覽文字</strong></td><td class="no">rgba 半透明白、11~14px、加光暈</td><td class="yes">實色 #FFF、≥ 14px、font-weight 700、去光暈</td></tr>
+            <tr><td><strong>Active 狀態</strong></td><td class="no">半透明漸層底 + 發光 text-shadow</td><td class="yes">實色底（#1D3A5F 或 #0284C7）+ 3px 亮青底線，形狀辨識不靠亮度</td></tr>
+            <tr><td><strong>輔助灰階</strong></td><td class="no">#94a3b8 / #cbd5e1 直接當內文色</td><td class="yes">內文最淺只用 #475569（7.5:1）；#94a3b8 只當底線/邊框</td></tr>
+            <tr><td><strong>邊框分隔</strong></td><td class="no">#e2e8f0 一像素細線</td><td class="yes">2px #CBD5E1 以上；區塊分界靠「底色差」不靠細線</td></tr>
+            <tr><td><strong>陰影</strong></td><td class="no">大量柔和 box-shadow 營造層次</td><td class="yes">投影機上陰影≈消失，層次改用底色對比與邊框</td></tr>
+            <tr><td><strong>字級</strong></td><td class="no">全域 0.85rem（13.6px）起跳</td><td class="yes">框架文字 ≥ 14px；投影模式浮動元素 ≥ 16px</td></tr>
+        </tbody>
+    </table>
+
+    <div class="verdict">
+        <h3>建議實施路徑</h3>
+        <p><strong>第一階段（1 天內）：</strong>套用「配色準則」— 只改 CSS（navbar.css / sidebar.css / variables.css），半透明文字全面改實色、字級加大。不動任何版面結構，立刻解決投影機看不清的問題。</p>
+        <p><strong>第二階段：範本 A</strong> — 導覽列併為單列 44px + iframe 頁去掉重複標題列，內容占比 85.6%（收合側欄 95.6%）。HTML 結構變動小，現有 JS（toggleSidebar / selectTopMenu / 麵包屑）都能沿用。</p>
+        <p><strong>第三階段：範本 C 投影模式</strong> — 把現有 FOCUS 全螢幕升級成「浮動膠囊 + 自動淡出」的簡報模式，會議投影一鍵切換、內容 100%。<strong>範本 B</strong> 則視主管回饋決定是否投資（最有產品感，但 sidebar 需重寫）。</p>
+    </div>
+</div>
+
+<script>
+function show(i, btn) {
+    document.querySelectorAll('.section').forEach((s, idx) => s.classList.toggle('active', idx === i));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+}
+</script>
+</body>
+</html>

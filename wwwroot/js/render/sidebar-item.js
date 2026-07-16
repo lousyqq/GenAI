@@ -33,7 +33,9 @@ export function generateSidebarMenuItem(menu, allMenus, level, forceExpand = tru
     if (hasChildren) actionAttr = `onclick="window.toggleSubMenu(event, '${safeDomId}', this)"`;
     else if (menu.menuMode === 'app_grid') actionAttr = `data-action="activate-menu" data-id="${window.escapeHTML(menu.id)}"`;
     else if (menu.url) {
-        if (menu.target === 'blank') actionAttr = `data-action="open-url" data-url="${window.escapeHTML(menu.url)}"`;
+        if (menu.target === 'blank' || menu.target === 'fullscreen' || menu.target === 'popup') {
+            actionAttr = `data-action="open-url" data-url="${window.escapeHTML(menu.url)}" data-target="${menu.target}"`;
+        }
         else if (menu.target === 'ie') actionAttr = `data-action="open-ie" data-url="${window.escapeHTML(menu.url)}"`;
         else actionAttr = `data-action="activate-menu" data-id="${window.escapeHTML(menu.id)}"`;
     }
@@ -102,7 +104,7 @@ window.renderUserDropdown = function () {
     setText('user-name', appState.currentUser.id || '');
     const loginCount = appState.currentUser.loginCount || 1;
     setHtml('user-role',
-        t('login_count_prefix', '這是您第 ') + '<span style="color:#38bdf8; font-weight:800; font-size:0.75rem;">' + loginCount + '</span>' + t('login_count_suffix', ' 次登入'));
+        '<span style="color:#e2e8f0;">' + t('login_count_prefix', '這是您第 ') + '</span><span style="color:#00f2fe; font-weight:800; font-size:0.82rem; text-shadow:0 0 6px rgba(0,242,254,0.5);">' + loginCount + '</span><span style="color:#e2e8f0;">' + t('login_count_suffix', ' 次登入') + '</span>');
 
     setHtml('dropdown-user-name', (appState.currentUser.name || '') + ' (' + (appState.currentUser.id || '') + ')' + srcBadge);
     setText('dropdown-user-dept', appState.currentUser.department || t('dept_unknown', '未設定部門'));

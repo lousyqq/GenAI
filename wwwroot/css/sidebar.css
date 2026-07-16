@@ -1,4 +1,4 @@
-﻿/* === sidebar.css - 側邊欄與內容區樣式 === */
+/* === sidebar.css - 側邊欄與內容區樣式 === */
 /* ================= V27 側邊欄與內容區 ================= */
 #wrapper {
     display: flex;
@@ -9,12 +9,13 @@
 
 /* ⭐ 側邊欄模組 Header（index.html 使用此 class，原 style.css 缺少定義） */
 .sidebar-module-header {
-    background: #f1f5f9;
-    padding: 10px 16px;
-    font-size: 0.8rem;
+    background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+    padding: 12px 18px;
+    font-size: 0.88rem;
     font-weight: 800;
-    color: #0b1120;
-    border-bottom: 1px solid var(--border-color);
+    color: #0f172a;
+    border-bottom: 2px solid #cbd5e1;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.03);
     display: flex;
     align-items: center;
     gap: 8px;
@@ -22,8 +23,9 @@
 }
 
     .sidebar-module-header i {
-        color: var(--navbar-accent);
-        font-size: 0.9rem;
+        color: #2563eb;
+        font-size: 1rem;
+        filter: drop-shadow(0 1px 2px rgba(37,99,235,0.2));
     }
 
 .module-title-text {
@@ -145,12 +147,13 @@ body.sidebar-hidden #sidebar {
 }
 
 .sidebar-header {
-    background: #f1f5f9;
-    padding: 12px 16px;
-    font-size: 0.8rem;
+    background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+    padding: 14px 18px;
+    font-size: 0.88rem;
     font-weight: 800;
-    color: #0b1120;
-    border-bottom: 1px solid var(--border-color);
+    color: #0f172a;
+    border-bottom: 2px solid #cbd5e1;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.03);
     position: sticky;
     top: 0;
     z-index: 10;
@@ -159,52 +162,62 @@ body.sidebar-hidden #sidebar {
 }
 
 .menu-item {
-    padding: 8px 16px;
-    font-size: 0.78rem;
-    font-weight: 600;
-    color: #475569;
+    padding: 10px 18px;
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #1e293b;
     display: flex;
     align-items: center;
     cursor: pointer;
-    border-left: 3px solid transparent;
-    transition: all 0.15s;
+    border-left: 4px solid transparent;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     white-space: nowrap;
 }
 
     .menu-item i.menu-icon {
-        margin-right: 10px;
-        font-size: 0.85rem;
-        width: 16px;
+        margin-right: 12px;
+        font-size: 0.95rem;
+        width: 18px;
         text-align: center;
-        color: #94a3b8;
+        color: #475569;
+        transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .menu-item i.dropdown-arrow {
         margin-left: auto;
-        font-size: 0.65rem;
-        color: #cbd5e1;
-        transition: transform 0.2s;
+        font-size: 0.75rem;
+        color: #94a3b8;
+        transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .menu-item:hover {
-        background: var(--active-bg);
-        color: var(--active-text);
+        background: #f1f5f9;
+        color: #0f172a;
+        transform: translateX(4px);
+        border-left-color: #94a3b8;
+    }
+
+    .menu-item:hover i.menu-icon {
+        transform: scale(1.15);
+        color: #2563eb;
     }
 
     .menu-item.active {
-        background: var(--active-bg);
-        color: var(--active-text);
-        border-left-color: var(--active-text);
-        font-weight: 700;
+        background: linear-gradient(90deg, #eff6ff 0%, #f8fafc 100%);
+        color: #1d4ed8;
+        border-left-color: #2563eb;
+        font-weight: 800;
+        box-shadow: 2px 0 8px rgba(37,99,235,0.08);
     }
 
         .menu-item.active i.menu-icon {
-            color: var(--active-text);
+            color: #2563eb;
+            transform: scale(1.1);
         }
 
     .menu-item[aria-expanded="true"] .dropdown-arrow {
         transform: rotate(90deg);
-        color: #64748b;
+        color: #475569;
     }
 
 .sub-menu-container {
@@ -214,11 +227,18 @@ body.sidebar-hidden #sidebar {
 }
 
 .menu-item.sub-item {
-    padding: 6px 16px 6px 40px;
-    font-size: 0.75rem;
-    font-weight: 500;
+    padding: 8px 16px 8px 42px;
+    font-size: 0.82rem;
+    font-weight: 600;
     position: relative;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+    .menu-item.sub-item:hover {
+        transform: translateX(4px);
+        color: #2563eb;
+        background: #f8fafc;
+    }
 
     .menu-item.sub-item::before {
         content: '';
