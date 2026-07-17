@@ -374,8 +374,8 @@ export function handleAppIconUpload(e) {
     const file = e.target.files[0];
     if (file) {
         compressImageFile(file, function (base64Str) {
-            if (base64Str.length > 32700) {
-                customAlert("圖檔太複雜，無法壓縮至安全大小，請更換較簡單的圖標。");
+            if (base64Str.length > 190000) {
+                customAlert("圖檔過於龐大或複雜，壓縮後仍超過資料庫與快取安全大小 (190KB)，請更換較簡單的圖標或選用較小尺寸。");
                 document.getElementById('appIconPreview').style.display = 'none';
                 e.target.value = '';
             } else {
@@ -699,21 +699,70 @@ export function setIconValToModal(prefix, iconVal) {
 }
 
 export function compressImageFile(file, callback) {
+    if (!file) { if (callback) callback(''); return; }
     const reader = new FileReader();
     reader.onload = function (e) {
+        const rawBase64 = e.target.result || '';
+        // ⭐️ 智慧判定：若是 SVG 向量圖、ICO 系統圖標，或小於 100KB 的小型透明圖，直接使用原始 Base64（保持完美向量畫質與圓角去背）
+        if (file.type === 'image/svg+xml' || file.type === 'image/x-icon' || (file.size < 100000 && (file.type === 'image/png' || file.type === 'image/webp'))) {
+            if (callback) callback(rawBase64);
+            return;
+        }
         const img = new Image();
         img.onload = function () {
-            const canvas = document.createElement('canvas');
-            const MAX_SIZE = 80;
-            let width = img.width; let height = img.height;
-            if (width > height) { if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; } }
-            else { if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; } }
-            canvas.width = width; canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, width, height); ctx.drawImage(img, 0, 0, width, height);
-            callback(canvas.toDataURL('image/jpeg', 0.8));
+            try {
+                const canvas = document.createElement('canvas');
+                // ⭐️ 提升最大長寬至 256px：確保高解析投影屏、大螢幕顯示極致清晰無鋸齒，且 Base64 體積依然小巧
+                const MAX_SIZE = 256;
+                let width = img.width || MAX_SIZE;
+                let height = img.height || MAX_SIZE;
+                if (width > height) {
+                    if (width > MAX_SIZE) { height = Math.round(height * (MAX_SIZE / width)); width = MAX_SIZE; }
+                } else {
+                    if (height > MAX_SIZE) { width = Math.round(width * (MAX_SIZE / height)); height = MAX_SIZE; }
+                }
+                canvas.width = Math.max(1, width);
+                canvas.height = Math.max(1, height);
+                const ctx = canvas.getContext('2d');
+
+                // ⭐️ 透明度去背保留：
+                // 若為 PNG/WebP/GIF 等透明圖格式，切勿填白色背景，並改以 image/webp (或 image/png) 輸出，保持圓角去背不變黑
+                const isTransparent = file.type.includes('png') || file.type.includes('webp') || file.type.includes('gif');
+                let outputType = 'image/jpeg';
+                let quality = 0.82;
+
+                if (isTransparent) {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    outputType = 'image/webp'; // WebP 支援完整透明度且體積比 PNG 節省 40%~60%
+                } else {
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                }
+
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                let compressed = canvas.toDataURL(outputType, quality);
+                // 如果瀏覽器把 WebP 轉得比預計大（或者不支援 WebP 轉成了 PNG/JPEG），做尺寸與品質保險
+                if (isTransparent && compressed.length > 190000 && outputType === 'image/webp') {
+                    compressed = canvas.toDataURL('image/png');
+                }
+                // 最終保險：若壓縮後字串反而比原始 Base64 還長，取較小值輸出
+                const finalStr = (compressed.length < rawBase64.length && compressed.length > 50) ? compressed : rawBase64;
+                if (callback) callback(finalStr);
+            } catch (err) {
+                console.warn('[compressImageFile] Canvas 壓縮發生異常，降級回傳原始 Base64:', err);
+                if (callback) callback(rawBase64);
+            }
         };
-        img.src = e.target.result;
+        img.onerror = function () {
+            console.warn('[compressImageFile] 圖片物件載入失敗，直接回傳原始 Base64');
+            if (callback) callback(rawBase64);
+        };
+        img.src = rawBase64;
+    };
+    reader.onerror = function () {
+        console.error('[compressImageFile] 讀取檔案失敗');
+        if (callback) callback('');
     };
     reader.readAsDataURL(file);
 }

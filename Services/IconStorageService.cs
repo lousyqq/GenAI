@@ -76,7 +76,7 @@ public class IconStorageService : IIconStorageService
 
         try
         {
-            var path = Path.Combine(_env.WebRootPath, "images", "icons", fileName);
+            var path = Path.Combine(GetSafeWebRootPath(), "images", "icons", fileName);
             if (File.Exists(path)) File.Delete(path);
         }
         catch (Exception ex)
@@ -84,6 +84,16 @@ public class IconStorageService : IIconStorageService
             // 刪檔失敗不該影響主流程（DB 已正確），只記 warning
             _logger.LogWarning(ex, "刪除孤兒 icon 檔 {File} 失敗（DB 已更新，僅磁碟未清）", fileName);
         }
+    }
+
+    private string GetSafeWebRootPath()
+    {
+        var path = _env.WebRootPath;
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            path = Path.Combine(_env.ContentRootPath, "wwwroot");
+        }
+        return path;
     }
 
     public async Task<int> MigrateBase64IconsAsync()
@@ -116,7 +126,7 @@ public class IconStorageService : IIconStorageService
         return converted;
     }
 
-    /// <summary>把 base64 data URI 寫成實體檔，回傳 "/images/icons/{guid}.{ext}"；非白名單/解析失敗回 null。</summary>
+    /// <summary>把 base64 data URI 寫成實體檔，回傳 "/images/icons/{guid}.{ext}"；非白名單/解析失敗或寫檔無權限時自動降級回傳原始 base64。</summary>
     private async Task<string?> ConvertDataUriToFileAsync(string dataUri)
     {
         var match = DataUriRegex.Match(dataUri);
@@ -136,13 +146,19 @@ public class IconStorageService : IIconStorageService
         }
         if (data.Length == 0) return null;
 
-        var folder = Path.Combine(_env.WebRootPath, "images", "icons");
-        Directory.CreateDirectory(folder);
-
-        var fileName = $"{Guid.NewGuid():N}.{ext}";
-        await File.WriteAllBytesAsync(Path.Combine(folder, fileName), data);
-
-        return IconUrlPrefix + fileName;
+        var folder = Path.Combine(GetSafeWebRootPath(), "images", "icons");
+        try
+        {
+            Directory.CreateDirectory(folder);
+            var fileName = $"{Guid.NewGuid():N}.{ext}";
+            await File.WriteAllBytesAsync(Path.Combine(folder, fileName), data);
+            return IconUrlPrefix + fileName;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "⚠️ 實體圖片寫檔失敗 ({Folder})：可能為 IIS 目錄寫入權限不足或路徑錯誤。系統已降級直接以 Base64 儲存至 DB，確保功能正常", folder);
+            return dataUri;
+        }
     }
 
     /// <summary>

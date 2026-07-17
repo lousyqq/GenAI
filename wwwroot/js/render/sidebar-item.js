@@ -23,7 +23,8 @@ export function generateSidebarMenuItem(menu, allMenus, level, forceExpand = tru
     // 圖片來源 = data: URI（剛上傳的預覽）或任何含 '/' 的路徑（/images/icons/... 實體檔、舊 icon/...、外部 URL）。
     // FontAwesome class（如 "fas fa-folder"）永不含 '/'，故以此區分圖片 vs FA。
     if (menu.icon && (menu.icon.startsWith('data:') || menu.icon.includes('/'))) {
-        iconHtml = `<img src="${window.escapeHTML(menu.icon)}" class="custom-icon menu-icon" alt="icon">`;
+        let menuIconSrc = window.escapeHTML((typeof window.toAppUrl === 'function' && menu.icon.startsWith('/')) ? window.toAppUrl(menu.icon) : menu.icon);
+        iconHtml = `<img src="${menuIconSrc}" class="custom-icon menu-icon" alt="icon">`;
     }
 
     const safeDomId = 'collapse_' + encodeURIComponent(String(menu.id)).replace(/%/g, '_').replace(/[^a-zA-Z0-9_-]/g, '');

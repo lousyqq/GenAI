@@ -705,7 +705,9 @@ export function renderAppGrid(containerId, appList) {
     appList.forEach(app => {
         const aName = window.escapeHTML(app.name || app.AppName);
         const aUrl = window.escapeHTML(app.url || app.Url);
-        let imgHtml = (app.iconBase64 || app.IconBase64) ? `<img src="${window.escapeHTML(app.iconBase64 || app.IconBase64)}" class="app-icon-img" alt="${aName}">` : `<i class="fas fa-cube text-muted" style="font-size:2rem;"></i>`;
+        let rawIcon = app.iconBase64 || app.IconBase64 || '';
+        let iconSrc = rawIcon ? window.escapeHTML((typeof window.toAppUrl === 'function' && rawIcon.startsWith('/')) ? window.toAppUrl(rawIcon) : rawIcon) : '';
+        let imgHtml = iconSrc ? `<img src="${iconSrc}" class="app-icon-img" alt="${aName}">` : `<i class="fas fa-cube text-muted" style="font-size:2rem;"></i>`;
         let aTargetVal = (app.target || app.Target || 'iframe');
         let actionAttr = (aTargetVal === 'iframe' || aTargetVal === 'iframe_fullscreen')
             ? `data-action="open-iframe" data-url="${aUrl}" data-name="${aName}" data-target="${aTargetVal}"`
