@@ -119,8 +119,7 @@ window.appState = window.appState || {
     fabs: [],
     roles: [],
     accounts: [],
-    apps: [],
-    requests: []
+    apps: []
 };
 
 // ⭐️ 終極保險：全域宣告讀取函式，保證任何地方呼叫都是抓取記憶體 (DB) 的資料
@@ -129,7 +128,6 @@ export function getFabs() { return window.appState.fabs || []; }
 export function getRoles() { return window.appState.roles || []; }
 export function getAccounts() { return window.appState.accounts || []; }
 export function getAppItems() { return window.appState.apps || []; }
-export function getRequests() { return window.appState.requests || []; }
 
 // 覆寫至 window，霸道蓋掉舊版 localStorage 的設定
 window.getCustomMenus = getCustomMenus;
@@ -137,7 +135,6 @@ window.getFabs = getFabs;
 window.getRoles = getRoles;
 window.getAccounts = getAccounts;
 window.getAppItems = getAppItems;
-window.getRequests = getRequests;
 
 // ⭐️ 超強防呆工具：無差別讀取物件屬性 (完全無視大小寫、camelCase 或 PascalCase)
 const getVal = (obj, key) => {
@@ -200,7 +197,6 @@ export async function fetchInitialDataFromDB() {
         const fabData = getVal(result, 'Fabs') || [];
         const mapFabRoleData = getVal(result, 'Map_Fab_Role') || [];
         const appData = getVal(result, 'Apps') || [];
-        const reqData = getVal(result, 'Requests') || [];
 
         // 1. 轉換 Menus (⭐️ 雙軌相容修復：同時讀取舊版欄位與新版關聯表)
         let mappedMenus = menusData.map(m => {
@@ -412,27 +408,12 @@ export async function fetchInitialDataFromDB() {
             };
         });
 
-        // 6. 轉換 Requests
-        let mappedReqs = reqData.map(r => ({
-            id: String(getVal(r, 'RequestId') || ''),
-            empId: String(getVal(r, 'EmpId') || ''),
-            empName: String(getVal(r, 'EmpName') || ''),
-            reqType: String(getVal(r, 'ReqType') || ''),
-            fab: String(getVal(r, 'Fab') || ''),
-            reason: String(getVal(r, 'Reason') || ''),
-            timestamp: String(getVal(r, 'Timestamp') || ''),
-            status: String(getVal(r, 'Status') || ''),
-            withdrawReason: String(getVal(r, 'WithdrawReason') || ''),
-            reply: String(getVal(r, 'Reply') || '')
-        }));
-
         // ⭐️ 更新全域狀態
         window.appState.menus = mappedMenus;
         window.appState.accounts = mappedAccounts;
         window.appState.roles = mappedRoles;
         window.appState.fabs = mappedFabs;
         window.appState.apps = mappedApps;
-        window.appState.requests = mappedReqs;
 
         // ⭐ 7. 解析 PersonalSettings（後端非 admin 已只回自己這一列；admin 雖回全量，
         //       但本機只需快取「登入者自己」的版面，避免把他人個人版面寫進本機 localStorage）。
@@ -463,7 +444,6 @@ export async function fetchInitialDataFromDB() {
         window.getRoles = function () { return window.appState.roles || []; };
         window.getAccounts = function () { return window.appState.accounts || []; };
         window.getAppItems = function () { return window.appState.apps || []; };
-        window.getRequests = function () { return window.appState.requests || []; };
 
         // 🛡️ Lazy Loading：向後端取得登入者自身的詳細權限 (因為 InitialData 已剔除全量權限)
         let myEmpId = '';
@@ -511,9 +491,6 @@ export async function fetchInitialDataFromDB() {
         if (typeof window.renderFabTable === 'function' && document.getElementById('page-fab-manage') && document.getElementById('page-fab-manage').classList.contains('active')) {
             window.renderFabTable();
         }
-        if (typeof window.renderApplyTable === 'function' && document.getElementById('page-apply') && document.getElementById('page-apply').classList.contains('active')) {
-            window.renderApplyTable();
-        }
 
         return true;
 
@@ -526,7 +503,7 @@ export async function fetchInitialDataFromDB() {
 // 取得當前網頁資料，轉換為符合 C# API 所需的 JSON 物件
 export function getDatabasePayload() {
     const menus = window.getCustomMenus(); const fabs = window.getFabs(); const roles = window.getRoles();
-    const accs = window.getAccounts(); const apps = window.getAppItems(); const reqs = window.getRequests();
+    const accs = window.getAccounts(); const apps = window.getAppItems();
     let payload = {};
 
     const safeStr = (val, maxLen) => String(val || '').trim().substring(0, maxLen);
@@ -586,13 +563,6 @@ export function getDatabasePayload() {
     payload.Apps = apps.map(a => ({
         AppId: safeStr(a.id, 50), MenuId: safeStr(a.menuId, 50), AppName: safeStr(a.appName, 100),
         Url: safeLongStr(a.url), IconBase64: safeLongStr(a.iconBase64 || a.IconBase64), Target: safeStr(a.target, 20) || 'iframe'
-    }));
-
-    payload.Requests = reqs.map(r => ({
-        RequestId: safeStr(r.id, 50), EmpId: safeStr(r.empId, 50), EmpName: safeStr(r.empName, 100),
-        ReqType: safeStr(r.reqType, 50), Fab: safeStr(r.fab, 50), Reason: safeLongStr(r.reason),
-        Timestamp: safeStr(r.timestamp, 50), Status: safeStr(r.status, 20),
-        WithdrawReason: safeLongStr(r.withdrawReason), Reply: safeLongStr(r.reply)
     }));
 
     // ⚠️ PersonalSettings 刻意「不」併入此 payload：

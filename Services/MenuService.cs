@@ -81,6 +81,8 @@ public class MenuService : IMenuService
             dto.DeniedEmpIds = null;
         }
 
+        _menuAuthService.RegisterPendingChanges(new[] { dto }, empId);
+
         if (dto.ParentIds != null && dto.ParentIds.Count > 0)
         {
             foreach (var pId in dto.ParentIds)
@@ -154,6 +156,8 @@ public class MenuService : IMenuService
             dto.AllowedEmpIds = null;
             dto.DeniedEmpIds = null;
         }
+
+        _menuAuthService.RegisterPendingChanges(new[] { dto }, empId);
 
         if (!await _menuAuthService.CanEditOrDeleteMenuAsync(empId, id, isAdmin))
             return MenuOperationResult.Forbidden();
@@ -255,6 +259,8 @@ public class MenuService : IMenuService
                 dto.DeniedEmpIds = null;
             }
         }
+
+        _menuAuthService.RegisterPendingChanges(dtos, empId);
 
         // 批次更新時，必須對每個受影響的項目嚴格檢查：1. 是否有原選單的編輯權限 2. 是否有新父目錄的掛載權限
         foreach (var dto in dtos)

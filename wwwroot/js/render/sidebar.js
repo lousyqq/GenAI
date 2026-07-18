@@ -523,8 +523,8 @@ export function renderSidebarMenus() {
                 { id: 'page-menu-manage', icon: 'fas fa-sitemap', i18nKey: 'menu_menu_manage', fallback: '選單配置管理', display: canManage },
                 { id: 'page-role-manage', icon: 'fas fa-users-cog', i18nKey: 'menu_role_manage', fallback: '權限管理', display: role === 'admin' },
                 { id: 'page-account-manage', icon: 'fas fa-user-shield', i18nKey: 'menu_account_manage', fallback: '帳號管理', display: role === 'admin' },
-                { id: 'page-apply', icon: 'fas fa-paper-plane', i18nKey: 'menu_apply', fallback: '需求申請', display: role !== 'admin' },
-                { id: 'page-activity-log', icon: 'fas fa-history', i18nKey: 'menu_activity_log', fallback: '操作紀錄', display: role === 'admin' }
+                { id: 'page-activity-log', icon: 'fas fa-history', i18nKey: 'menu_activity_log', fallback: '操作紀錄', display: role === 'admin' },
+                { id: 'page-site-stats', icon: 'fas fa-chart-line', i18nKey: 'menu_site_stats', fallback: '使用率與流量統計', display: role === 'admin' }
             ];
             sysMenus.forEach(sm => {
                 if (sm.display) { const smName = t(sm.i18nKey, sm.fallback); html += `<div class="menu-item" onclick="navTo('${sm.id}', this, '${smName}')"><i class="${sm.icon} menu-icon"></i> <span class="text-truncate">${smName}</span></div>`; }

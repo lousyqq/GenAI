@@ -1,7 +1,10 @@
+using GenAI.Controllers;
+
 namespace GenAI.Services.Interfaces;
 
 public interface IMenuAuthService
 {
+    void RegisterPendingChanges(IEnumerable<MenuDto> pendingDtos, string empId);
     Task<bool> CanManageStructureAsync(string empId, string menuId, bool isAdmin);
     Task<bool> CanEditOrDeleteMenuAsync(string empId, string menuId, bool isAdmin);
     Task<bool> IsDelegatedAdminAsync(string empId, bool isAdmin);

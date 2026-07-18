@@ -33,9 +33,17 @@ public class AppDbContext : DbContext
     // 操作紀錄
     public DbSet<UserActivityLog> UserActivityLogs { get; set; }
 
+    // 網站每日/月份瀏覽彙總統計表
+    public DbSet<SiteVisitorDailyStat> SiteVisitorDailyStats { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
+
+        modelBuilder.Entity<SiteVisitorDailyStat>(entity =>
+        {
+            entity.HasKey(e => new { e.StatDate, e.EmpId });
+        });
     }
 }

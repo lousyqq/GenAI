@@ -28,4 +28,10 @@ public interface IAuthService
     /// fake Account 僅在 DB Accounts 表沒有這個工號時，作為 fallback 使用。
     /// </summary>
     (bool matched, Models.Account? fallbackAccount) VerifyTestAccount(string empId, string password);
+
+    /// <summary>
+    /// 到 [WEB].[dbo].[notes_person] 比對 EMPNO = empId，自動解析姓名 (NAME) 與部門 (DEPTNAME)。
+    /// 若 DB 不存在此筆資料，則姓名維持登入帳號、部門維持空白。
+    /// </summary>
+    Task<(bool found, string name, string department)> ResolvePersonInfoAsync(string empId);
 }

@@ -117,7 +117,22 @@ public class AuthService : IAuthService
     {
         if (string.IsNullOrWhiteSpace(empId)) return null;
         var normalized = empId.Trim();
-        return await _context.Accounts.FirstOrDefaultAsync(a => a.EmpId.ToLower() == normalized.ToLower());
+        var account = await _context.Accounts.FirstOrDefaultAsync(a => a.EmpId.ToLower() == normalized.ToLower());
+        if (account != null && !string.Equals(account.EmpId, "admin", StringComparison.OrdinalIgnoreCase))
+        {
+            if (string.IsNullOrWhiteSpace(account.Department) || string.Equals(account.Name, account.EmpId, StringComparison.OrdinalIgnoreCase))
+            {
+                var (found, personName, personDept) = await ResolvePersonInfoAsync(account.EmpId);
+                if (found && (account.Name != personName || account.Department != personDept))
+                {
+                    account.Name = personName;
+                    account.Department = personDept;
+                    await _context.SaveChangesAsync();
+                    _logger.LogInformation("FindAccountAsync: 自動由 [WEB].[dbo].[notes_person] 補齊帳號 {EmpId} 資訊 (姓名={Name}, 部門={Dept})", account.EmpId, account.Name, account.Department);
+                }
+            }
+        }
+        return account;
     }
 
     public (bool matched, Account? fallbackAccount) VerifyTestAccount(string empId, string password)
@@ -152,5 +167,57 @@ public class AuthService : IAuthService
         }
 
         return (false, null);
+    }
+
+    public async Task<(bool found, string name, string department)> ResolvePersonInfoAsync(string empId)
+    {
+        if (string.IsNullOrWhiteSpace(empId)) return (false, empId ?? "", "");
+        var cleanEmpId = empId.Trim();
+        try
+        {
+            var conn = _context.Database.GetDbConnection();
+            var wasOpen = conn.State == System.Data.ConnectionState.Open;
+            if (!wasOpen) await conn.OpenAsync();
+            try
+            {
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = @"
+SELECT TOP 1 NAME, DEPTNAME 
+FROM [WEB].[dbo].[notes_person] 
+WHERE EMPNO = @empId 
+   OR (@isNumeric = 1 AND EMPNO LIKE '%' + @empId AND LEN(EMPNO) >= LEN(@empId))";
+                var pEmp = cmd.CreateParameter();
+                pEmp.ParameterName = "@empId";
+                pEmp.Value = cleanEmpId;
+                cmd.Parameters.Add(pEmp);
+
+                var pNum = cmd.CreateParameter();
+                pNum.ParameterName = "@isNumeric";
+                pNum.Value = cleanEmpId.All(char.IsDigit) ? 1 : 0;
+                cmd.Parameters.Add(pNum);
+
+                using var reader = await cmd.ExecuteReaderAsync();
+                if (await reader.ReadAsync())
+                {
+                    var name = reader["NAME"]?.ToString()?.Trim();
+                    var dept = reader["DEPTNAME"]?.ToString()?.Trim();
+                    if (!string.IsNullOrWhiteSpace(name))
+                    {
+                        return (true, name, dept ?? "");
+                    }
+                }
+            }
+            finally
+            {
+                if (!wasOpen) await conn.CloseAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "從 [WEB].[dbo].[notes_person] 查詢工號 {EmpId} 時發生異常", empId);
+        }
+
+        // 查詢時 DB 不存在此筆資料，則姓名維持登入帳號、部門維持空白
+        return (false, cleanEmpId, "");
     }
 }

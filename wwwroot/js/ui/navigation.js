@@ -1,9 +1,10 @@
 // === ui/navigation.js - 語系切換、選單導航、路由、iframe ===
 import { getCustomMenus, getFabs, getRoles, t } from '../config.js?v=20260607k';
 import { loadActivityLogs } from '../admin/activity-log.js?v=20260607k';
+import { initSiteStats } from '../admin/stats-ui.js?v=20260718';
 import { openAppGridPage } from '../admin/misc-manage.js?v=20260607k';
 import { renderSidebarMenus } from '../render/sidebar.js?v=20260607k';
-import { renderAccountTable, renderApplyTable, renderAuditTable, renderFabTable, renderMenuConfigTable, renderPersonalMenuManage, renderRoleTable, renderWebpageTable } from '../render/tables.js?v=20260607k';
+import { renderAccountTable, renderFabTable, renderMenuConfigTable, renderPersonalMenuManage, renderRoleTable, renderWebpageTable } from '../render/tables.js?v=20260607k';
 import { appState } from '../store.js?v=20260607k';
 
 
@@ -54,9 +55,8 @@ export function changeLanguage(lang) {
         if (pageId === 'page-fab-manage' && typeof renderFabTable === 'function') renderFabTable();
         if (pageId === 'page-role-manage' && typeof renderRoleTable === 'function') renderRoleTable();
         if (pageId === 'page-account-manage' && typeof renderAccountTable === 'function') renderAccountTable();
-        if (pageId === 'page-apply' && typeof renderApplyTable === 'function') renderApplyTable();
-        if (pageId === 'page-audit-manage' && typeof renderAuditTable === 'function') renderAuditTable();
         if (pageId === 'page-activity-log' && typeof loadActivityLogs === 'function') loadActivityLogs();
+        if (pageId === 'page-site-stats' && typeof initSiteStats === 'function') initSiteStats();
     }
 }
 window.changeLanguage = changeLanguage;
@@ -555,9 +555,8 @@ export function navTo(pageId, element, subTitle = '') {
     if (pageId === 'page-fab-manage' && typeof renderFabTable === 'function') renderFabTable();
     if (pageId === 'page-role-manage' && typeof renderRoleTable === 'function') renderRoleTable();
     if (pageId === 'page-account-manage' && typeof renderAccountTable === 'function') renderAccountTable();
-    if (pageId === 'page-apply' && typeof renderApplyTable === 'function') renderApplyTable();
-    if (pageId === 'page-audit-manage' && typeof renderAuditTable === 'function') renderAuditTable();
     if (pageId === 'page-activity-log' && typeof loadActivityLogs === 'function') loadActivityLogs();
+    if (pageId === 'page-site-stats' && typeof initSiteStats === 'function') initSiteStats();
     if (pageId !== 'page-app-grid') appState.currentAppGridMenuId = null;
 }
 

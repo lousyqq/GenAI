@@ -30,6 +30,7 @@ public class SchemaBootstrap : ISchemaBootstrap
             await EnsureMenuAclTableAsync(conn, "Map_Menu_AllowAccount");
             await EnsureMenuAclTableAsync(conn, "Map_Menu_DenyAccount");
             await EnsureUserActivityLogsAsync(conn);
+            await EnsureSiteVisitorDailyStatsAsync(conn);
             await EnsureIndexesAsync(conn);
             await SeedTestAccountsAsync(conn);
 
@@ -47,7 +48,54 @@ public class SchemaBootstrap : ISchemaBootstrap
                 // 若 Windows EventLog 沒有權限，連 LogError 都會拋錯，這裡吞掉避免進程崩潰
             }
         }
+
+        // ✅ B3 修正：圖示上傳目錄驗證（獨立於 DB，不納入 try/catch 中，避免 DB 失敗時跳過）
+        // 在 Production IIS 環境下，App Pool 身份若對 wwwroot 無寫入權限，圖示上傳會靜默 fallback 至 DB Base64，
+        // 但操作人員不會知道。啟動時主動驗證並寫 Warning log，讓問題在部署當下就被發現。
+        EnsureIconUploadDirectory();
     }
+
+    /// <summary>
+    /// 確保 wwwroot/images/icons 目錄存在且 App Pool 身份有寫入權限。
+    /// 只做日誌通知，不拋例外（Icon 存入 DB Base64 是既有的 fallback 機制，功能不會中斷）。
+    /// </summary>
+    private void EnsureIconUploadDirectory()
+    {
+        try
+        {
+            var wwwroot = _config["Hosting:WebRootPath"]
+                ?? Path.Combine(AppContext.BaseDirectory, "wwwroot");
+            var iconsDir = Path.Combine(wwwroot, "images", "icons");
+
+            if (!Directory.Exists(iconsDir))
+            {
+                Directory.CreateDirectory(iconsDir);
+                _logger.LogInformation("✅ SchemaBootstrap 效能索引檢查完成 (idempotent)");
+                _logger.LogInformation("📁 已自動建立圖示目錄：{Dir}", iconsDir);
+            }
+
+            // 實際寫入測試，確認 IIS App Pool 有寫入權限
+            var testFile = Path.Combine(iconsDir, ".write_test");
+            File.WriteAllText(testFile, "ok");
+            File.Delete(testFile);
+            _logger.LogInformation("✅ 圖示上傳目錄權限驗證通過：{Dir}", iconsDir);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning(ex,
+                "⚠️ 圖示上傳目錄寫入權限不足！路徑：{Dir}。" +
+                "圖示將以 Base64 存入 DB（功能不影響），但磁碟儲存失敗。" +
+                "請確認 IIS App Pool 身份對 wwwroot\\images\\icons 有寫入權限。",
+                Path.Combine(_config["Hosting:WebRootPath"]
+                    ?? Path.Combine(AppContext.BaseDirectory, "wwwroot"), "images", "icons"));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "⚠️ 圖示上傳目錄驗證失敗：{Message}", ex.Message);
+        }
+    }
+
+
 
     /// <summary>確保 Accounts 有 LoginCount / LastLoginTime 欄位 (與舊 SettingsService 自動補齊邏輯一致)</summary>
     private async Task EnsureAccountStatsColumnsAsync(SqlConnection conn)
@@ -189,6 +237,33 @@ public class SchemaBootstrap : ISchemaBootstrap
         }
     }
 
+    /// <summary>確保 SiteVisitorDailyStats 流量與使用率彙總表存在</summary>
+    private async Task EnsureSiteVisitorDailyStatsAsync(SqlConnection conn)
+    {
+        using (var checkCmd = new SqlCommand(
+            "SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'SiteVisitorDailyStats'", conn))
+        {
+            var exists = (int)(await checkCmd.ExecuteScalarAsync())! > 0;
+            if (!exists)
+            {
+                var createSql = @"
+                    CREATE TABLE SiteVisitorDailyStats (
+                        StatDate       DATE          NOT NULL,
+                        EmpId          NVARCHAR(50)  NOT NULL,
+                        EmpName        NVARCHAR(100) NULL,
+                        Department     NVARCHAR(100) NULL,
+                        PageViews      INT           NOT NULL DEFAULT 1,
+                        FirstVisitTime DATETIME2     NOT NULL,
+                        LastVisitTime  DATETIME2     NOT NULL,
+                        CONSTRAINT PK_SiteVisitorDailyStats PRIMARY KEY (StatDate, EmpId)
+                    );";
+                using var createCmd = new SqlCommand(createSql, conn);
+                await createCmd.ExecuteNonQueryAsync();
+                _logger.LogInformation("✅ SchemaBootstrap 建立資料表 SiteVisitorDailyStats");
+            }
+        }
+    }
+
     /// <summary>
     /// 效能索引的「單一事實來源」(single source of truth)。
     /// 本專案無 EF Migrations、啟動也不呼叫 EnsureCreated/Migrate，
@@ -215,6 +290,7 @@ public class SchemaBootstrap : ISchemaBootstrap
             //     補 EmpId 索引讓 MenuAuthService.GetVisibleMenuIdsAsync 的可見性查詢走 index seek。
             ("IX_Map_Menu_AllowAccount_EmpId",       "Map_Menu_AllowAccount", "EmpId"),
             ("IX_Map_Menu_DenyAccount_EmpId",        "Map_Menu_DenyAccount",  "EmpId"),
+            ("IX_SiteVisitorDailyStats_EmpId",       "SiteVisitorDailyStats", "EmpId"),
         };
 
         foreach (var ix in indexes)

@@ -95,10 +95,20 @@ export async function tryAutoLogin() {
     //   ⚠️ 只有「初次進入點」(tryAutoLogin) 才允許自動登入 → 對齊「直接輸入網址=自動偵測為主」。
     //      其餘呼叫 (tab 切換 / 重試 / overlay 內部) 一律 allowAutoLogin=false：只顯示偵測結果 + 啟用
     //      「以此身份進入」按鈕，讓使用者在登入框內主動選擇，不會「點一下自動偵測 tab 就被登入」。
-    await fetchWhoAmI(true);
+    const whoamiData = await fetchWhoAmI(true);
 
     // 若 fetchWhoAmI 內已成功 auto-login，appState.currentUser 已被設置
     if (appState.currentUser) return true;
+
+    // ⚡ B2 修正：WhoAmI 完成後若帳號無效（刪除、無權限）且頁面上有殘留 localStorage 快取身分，
+    //   必須優雅清除快取，避免被刪帳號的使用者能永久停留在頁面（後端所有 [Authorize] API 會 403，
+    //   但 UI 仍會正常渲染造成混淆）。只在 whoamiData 明確回傳 success:false 才清除，
+    //   網路斷線 / 逾時等場景（data.success undefined）不清除，避免誤殺。
+    if (whoamiData && whoamiData.success === false && appState.currentUser) {
+        // WhoAmI 明確表示此身分無效 → 清除快取並踢到登入畫面
+        appState.currentUser = null;
+        try { localStorage.removeItem('umc_current_user'); } catch (e) { }
+    }
 
     // 自動偵測失敗 / 拿到工號但無權限 → 顯示登入框
     //   allowManualLogin=false 時，使用者只能按重試或請聯絡管理員
@@ -359,62 +369,15 @@ export async function completeLoginAfterAuth(empId, source, fallbackAccount) {
 
     const accEmpId = acc.empId || acc.EmpId || '';
     const now = new Date();
-    // 「最後一次已知的 DB 值」— 後端失敗時用這個顯示，**不要本地 +1 假裝**
-    //   原本邏輯：oldLoginCount+1 樂觀顯示 → DB 沒實際 +1 卻畫面 +1 = 視覺正確、實際錯
-    //   現在改：等 DB 真正回來才顯示新值。後端失敗 → 維持原 DB 值 + 用本地 now 當登入時間
     const lastKnownDbCount = parseInt(acc.loginCount || acc.LoginCount || 0) || 0;
     const lastKnownDbTime = acc.lastLoginTime || acc.LastLoginTime || null;
     let displayLoginCount = lastKnownDbCount;
-    let displayLoginTime = formatLoginTime(now);
-    let backendSucceeded = false;
+    // ✅ O8 修正：初始顯示「上次登入時間」(DB 值)，而非本地 now。
+    //   背景 UpdateLoginStats 完成後才更新為最新次數與時間，避免前後兩次渲染因伺服器/本地時區差異
+    //   而造成右上角「本次登入時間」在數秒內從本地時間跳動至 DB 時間（視覺閃跳）。
+    let displayLoginTime = lastKnownDbTime ? formatLoginTimeFromDb(lastKnownDbTime) : formatLoginTime(now);
 
-    // 更新 DB 的 LoginCount / LastLoginTime — DB 是「唯一事實來源」
-    try {
-        const resp = await fetch('/Settings/UpdateLoginStats', {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: JSON.stringify({ empId: accEmpId })
-        });
-        if (resp.ok) {
-            const result = await resp.json();
-            if (result && result.success) {
-                if (typeof result.loginCount === 'number' && result.loginCount > 0) {
-                    displayLoginCount = result.loginCount;
-                }
-                if (result.lastLoginTime) {
-                    displayLoginTime = formatLoginTimeFromDb(result.lastLoginTime);
-                }
-                backendSucceeded = true;
-            } else {
-                // 後端有回應但失敗 (e.g. admin TestAccount 不在 Accounts 表)
-                // 顯示最後一次已知的 DB 值，不假裝 +1
-                console.warn('UpdateLoginStats 後端拒絕：', result && result.message);
-                if (lastKnownDbTime) displayLoginTime = formatLoginTimeFromDb(lastKnownDbTime);
-            }
-        } else {
-            console.warn('UpdateLoginStats HTTP 失敗：', resp.status);
-            if (lastKnownDbTime) displayLoginTime = formatLoginTimeFromDb(lastKnownDbTime);
-        }
-    } catch (e) {
-        console.warn('UpdateLoginStats 連線失敗：', e);
-        if (lastKnownDbTime) displayLoginTime = formatLoginTimeFromDb(lastKnownDbTime);
-    }
-
-    // 同步 appState (僅在 DB 真的成功更新時才同步、不寫假值)
-    if (backendSucceeded && window.appState && window.appState.accounts) {
-        const a = window.appState.accounts.find(x => String(x.empId).toLowerCase() === accEmpId.toLowerCase());
-        if (a) {
-            a.loginCount = displayLoginCount;
-            a.lastLoginTime = new Date().toISOString();
-        }
-    }
-
-    // ⚠️ 不再寫 localStorage `umc_user_stats_*` — 該欄位全專案沒人讀、純死碼，
-    //   留著會讓人誤以為「登入次數有快取」其實沒有。DB 是唯一事實來源。
-
+    // ⚡ 即時先以現有已知的帳號資訊設定 appState.currentUser 並立即渲染 UI（右上方帳號與看板 0 秒就位）
     appState.currentUser = {
         id: accEmpId,
         empId: accEmpId,
@@ -429,12 +392,52 @@ export async function completeLoginAfterAuth(empId, source, fallbackAccount) {
         defaultPages: acc.defaultPages || acc.DefaultPages || {},
         loginSource: source || 'manual'  // 'windows' / 'manual' / 'emergency'
     };
-    // ⚠️ id 必須一起存 — restoreLoginFromStorage 與 sidebar.js getMenuPermissions 都會用 appState.currentUser.id 判定權限
     const slimUser = { id: appState.currentUser.id, empId: appState.currentUser.empId, name: appState.currentUser.name, department: appState.currentUser.department, roleLevel: appState.currentUser.roleLevel, loginSource: appState.currentUser.loginSource };
     localStorage.setItem('umc_current_user', JSON.stringify(slimUser));
 
     hideLoginOverlay();
     if (typeof initDashboardUI === 'function') initDashboardUI();
+
+    // ⚡ 背景非同步更新 DB 的 LoginCount / LastLoginTime，完全不阻塞畫面初次顯示
+    fetch('/Settings/UpdateLoginStats', {
+        method: 'POST',
+        headers: { 
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({ empId: accEmpId })
+    }).then(async resp => {
+        if (resp.ok) {
+            const result = await resp.json();
+            if (result && result.success) {
+                if (typeof result.loginCount === 'number' && result.loginCount > 0) {
+                    displayLoginCount = result.loginCount;
+                }
+                if (result.lastLoginTime) {
+                    displayLoginTime = formatLoginTimeFromDb(result.lastLoginTime);
+                }
+                if (window.appState && window.appState.accounts) {
+                    const a = window.appState.accounts.find(x => String(x.empId).toLowerCase() === accEmpId.toLowerCase());
+                    if (a) {
+                        a.loginCount = displayLoginCount;
+                        a.lastLoginTime = new Date().toISOString();
+                    }
+                }
+                if (appState.currentUser && String(appState.currentUser.empId).toLowerCase() === accEmpId.toLowerCase()) {
+                    appState.currentUser.loginCount = displayLoginCount;
+                    appState.currentUser.currentLoginTime = displayLoginTime;
+                    if (typeof window.renderUserDropdown === 'function') window.renderUserDropdown();
+                }
+            } else {
+                console.warn('UpdateLoginStats 後端拒絕：', result && result.message);
+            }
+        } else {
+            console.warn('UpdateLoginStats HTTP 失敗：', resp.status);
+        }
+    }).catch(e => {
+        console.warn('UpdateLoginStats 連線失敗：', e);
+    });
+
     return true;
 }
 

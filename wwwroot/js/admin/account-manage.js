@@ -16,8 +16,36 @@ export function openAddAccountModal() {
         document.getElementById('editAccMode').value = '';
 
         // ⭐️ 修復 1：工號欄位狀態還原，確保新增時可輸入 (解除 readOnly 與 disabled)
-        document.getElementById('accEmpId').readOnly = false;
-        document.getElementById('accEmpId').disabled = false;
+        const empIdEl = document.getElementById('accEmpId');
+        if (empIdEl) {
+            empIdEl.readOnly = false;
+            empIdEl.disabled = false;
+            if (!empIdEl._lookupBound) {
+                empIdEl._lookupBound = true;
+                empIdEl.addEventListener('blur', async function() {
+                    const mode = document.getElementById('editAccMode').value;
+                    if (mode === 'edit') return;
+                    const val = this.value.trim();
+                    if (!val) return;
+                    try {
+                        const res = await fetch(`/api/Accounts/LookupPerson?empId=${encodeURIComponent(val)}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                        if (!res.ok) return;
+                        const data = await res.json();
+                        if (data && data.success) {
+                            const nameEl = document.getElementById('accName');
+                            const deptEl = document.getElementById('accDept');
+                            if (data.found) {
+                                if (nameEl && (!nameEl.value || nameEl.value === val)) nameEl.value = data.name || '';
+                                if (deptEl && !deptEl.value) deptEl.value = data.department || '';
+                            } else {
+                                if (nameEl && !nameEl.value) nameEl.value = val;
+                                if (deptEl && !deptEl.value) deptEl.value = '';
+                            }
+                        }
+                    } catch (e) { console.warn('LookupPerson failed:', e); }
+                });
+            }
+        }
 
         document.getElementById('accRoleLevel').value = 'user';
         document.getElementById('accRoleLevel').disabled = false;

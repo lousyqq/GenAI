@@ -108,11 +108,12 @@ public class AuthController : ControllerBase
                 });
             }
 
+            var (foundPerson, personName, personDept) = await _authService.ResolvePersonInfoAsync(empId);
             account = new Models.Account
             {
                 EmpId = empId,
-                Name = empId,
-                Department = "",
+                Name = personName,
+                Department = personDept,
                 RoleLevel = "user",
                 CanEditOthers = false,
                 LoginCount = 0
@@ -172,6 +173,21 @@ public class AuthController : ControllerBase
         await _activityLogger.LogLoginAsync(HttpContext, account.EmpId, account.Name, "windows", true,
             detail: $"{{\"rawName\":\"{rawName}\"}}");
 
+        // ✅ B4 修正：實際從 DB 查詢 assignedRoles 與 manageableMenus，
+        //   避免委派使用者收到空陣列 fallbackAccount 後，前端 isPureViewer() 誤判為純瀏覽者
+        //   而隱藏「系統設定」入口，導致委派管理者找不到管理頁面入口。
+        var assignedRoles = await _context.MapAccountRoles
+            .AsNoTracking()
+            .Where(r => r.EmpId == account.EmpId)
+            .Select(r => r.RoleId)
+            .ToListAsync();
+
+        var manageableMenus = await _context.MapAccountManageMenus
+            .AsNoTracking()
+            .Where(m => m.EmpId == account.EmpId)
+            .Select(m => m.MenuId)
+            .ToListAsync();
+
         return Ok(new
         {
             success = true,
@@ -187,8 +203,8 @@ public class AuthController : ControllerBase
                 department = account.Department ?? "",
                 roleLevel = account.RoleLevel ?? "user",
                 canEditOthers = account.CanEditOthers,
-                assignedRoles = Array.Empty<string>(),
-                manageableMenus = Array.Empty<string>(),
+                assignedRoles,
+                manageableMenus,
                 defaultPages = new Dictionary<string, string>()
             }
         });
@@ -332,11 +348,12 @@ public class AuthController : ControllerBase
             }
             else if (loginSource == "manual" && _authSettings.AutoProvisionWindowsAccounts)
             {
+                var (foundPerson, personName, personDept) = await _authService.ResolvePersonInfoAsync(empId);
                 account = new Models.Account
                 {
                     EmpId = empId,
-                    Name = empId,
-                    Department = "",
+                    Name = personName,
+                    Department = personDept,
                     RoleLevel = "user",
                     CanEditOthers = false,
                     LoginCount = 0

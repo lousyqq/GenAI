@@ -103,7 +103,6 @@ export function getFabs() { return appState ? (appState.fabs || []) : []; }
 export function getRoles() { return appState ? (appState.roles || []) : []; }
 export function getAccounts() { return appState ? (appState.accounts || []) : []; }
 export function getAppItems() { return appState ? (appState.apps || []) : []; }
-export function getRequests() { return appState ? (appState.requests || []) : []; }
 
 // 個人化設定暫時保留 LocalStorage，因為這部分隨使用者設備變動較合理
 export function getPersonalSettings(empId) {
@@ -175,7 +174,6 @@ window.getFabs = getFabs;
 window.getRoles = getRoles;
 window.getAccounts = getAccounts;
 window.getAppItems = getAppItems;
-window.getRequests = getRequests;
 window.getPersonalSettings = getPersonalSettings;
 window.savePersonalSettings = savePersonalSettings;
 window.t = t;

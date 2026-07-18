@@ -1,4 +1,5 @@
 using GenAI.Data;
+using GenAI.Controllers;
 using GenAI.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
@@ -37,6 +38,8 @@ public class MenuAuthService : IMenuAuthService
     //   ⚠️ 安全性：所有權限檢查都發生在「結構異動之前」(見 MenusController 的 Create/Update/Batch 流程，
     //      先全部檢查、後才動 DB)，故請求內快取不會讀到「同一請求中途被自己改掉」的過期結構。
     private Dictionary<string, List<string>>? _childToParents;                                    // child → 父節點清單
+    private Dictionary<string, string>? _pendingCreatedBy;
+    private Dictionary<string, List<string>>? _pendingEdges;
     private readonly Dictionary<string, bool> _canEditOthersCache = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, List<string>> _manageSetCache = new(StringComparer.OrdinalIgnoreCase);
 
@@ -45,6 +48,46 @@ public class MenuAuthService : IMenuAuthService
         _context = context;
         _cache = cache;
         _settingsService = settingsService;
+    }
+
+    public void RegisterPendingChanges(IEnumerable<MenuDto> pendingDtos, string empId)
+    {
+        _pendingCreatedBy ??= new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        _pendingEdges ??= new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var dto in pendingDtos)
+        {
+            if (string.IsNullOrWhiteSpace(dto.Id)) continue;
+
+            _pendingCreatedBy[dto.Id] = empId;
+
+            var parents = new List<string>();
+            if (dto.ParentIds != null && dto.ParentIds.Count > 0)
+            {
+                parents.AddRange(dto.ParentIds.Where(p => !string.IsNullOrWhiteSpace(p)));
+            }
+            else if (!string.IsNullOrEmpty(dto.ParentId))
+            {
+                parents.Add(dto.ParentId);
+            }
+
+            if (parents.Count > 0)
+            {
+                _pendingEdges[dto.Id] = parents;
+            }
+            else if (_pendingEdges.ContainsKey(dto.Id))
+            {
+                _pendingEdges[dto.Id] = new List<string>();
+            }
+        }
+
+        if (_childToParents != null)
+        {
+            foreach (var kv in _pendingEdges)
+            {
+                _childToParents[kv.Key] = kv.Value;
+            }
+        }
     }
 
     /// <summary>整張 Map_Menu_Structure 的 child→parents 反向索引（每請求載入一次）</summary>
@@ -57,6 +100,14 @@ public class MenuAuthService : IMenuAuthService
             _childToParents = edges
                 .GroupBy(e => e.ChildMenuId, StringComparer.OrdinalIgnoreCase)
                 .ToDictionary(g => g.Key, g => g.Select(e => e.ParentMenuId).ToList(), StringComparer.OrdinalIgnoreCase);
+
+            if (_pendingEdges != null)
+            {
+                foreach (var kv in _pendingEdges)
+                {
+                    _childToParents[kv.Key] = kv.Value;
+                }
+            }
         }
         return _childToParents;
     }
@@ -89,6 +140,10 @@ public class MenuAuthService : IMenuAuthService
 
         var menu = await _context.Menus.AsNoTracking().FirstOrDefaultAsync(m => m.MenuId == menuId);
         bool isMyOwn = menu != null && string.Equals(menu.CreatedBy, empId, StringComparison.OrdinalIgnoreCase);
+        if (menu == null && _pendingCreatedBy != null && _pendingCreatedBy.TryGetValue(menuId, out var pendingCreator))
+        {
+            isMyOwn = string.Equals(pendingCreator, empId, StringComparison.OrdinalIgnoreCase);
+        }
 
         var manageSet = await GetManageSetAsync(empId);
         if (manageSet.Count == 0) return (isMyOwn, false, false, canEditOthers);
@@ -147,9 +202,6 @@ public class MenuAuthService : IMenuAuthService
     {
         if (isAdmin) return true;
         if (string.IsNullOrWhiteSpace(empId)) return false;
-
-        var account = await _context.Accounts.AsNoTracking().FirstOrDefaultAsync(a => a.EmpId == empId);
-        if (account?.CanEditOthers != true) return false;
 
         var hasManagedMenus = await _context.MapAccountManageMenus
             .AsNoTracking()
@@ -238,9 +290,33 @@ public class MenuAuthService : IMenuAuthService
             }
         }
 
-        // ④ 計算 base set
+        // ⭐️ ④ 計算 base set，加入委派選單 (`MapAccountManageMenus`) 及其祖先、以及登入者自己建立的項目 (`CreatedBy`)
         var allowed = new HashSet<string>(roleAllowed, StringComparer.OrdinalIgnoreCase);
         foreach (var x in extras) allowed.Add(x);
+
+        var myManagedMenuIds = await _context.MapAccountManageMenus.AsNoTracking()
+            .Where(m => m.EmpId == empId).Select(m => m.MenuId).ToListAsync();
+        foreach (var mid in myManagedMenuIds) allowed.Add(mid);
+
+        if (myManagedMenuIds.Count > 0)
+        {
+            var childToParents = await GetChildToParentsAsync();
+            var q = new Queue<string>(myManagedMenuIds);
+            var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            while (q.Count > 0)
+            {
+                var curr = q.Dequeue();
+                if (!visited.Add(curr)) continue;
+                allowed.Add(curr);
+                if (childToParents.TryGetValue(curr, out var parents))
+                    foreach (var p in parents) q.Enqueue(p);
+            }
+        }
+
+        var myOwnMenuIds = await _context.Menus.AsNoTracking()
+            .Where(m => m.CreatedBy == empId).Select(m => m.MenuId).ToListAsync();
+        foreach (var mid in myOwnMenuIds) allowed.Add(mid);
+
         // per-fab deny：僅扣除「所有可存取廠區都 deny」者
         foreach (var x in fullyDenied) allowed.Remove(x);
         // menu ACL — force-allow 強加

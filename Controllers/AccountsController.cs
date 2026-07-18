@@ -13,10 +13,13 @@ public class AccountsController : ControllerBase
     private readonly IAccountService _accountService;
     private readonly IActivityLogger _activityLogger;
 
-    public AccountsController(IAccountService accountService, IActivityLogger activityLogger)
+    private readonly IAuthService _authService;
+
+    public AccountsController(IAccountService accountService, IActivityLogger activityLogger, IAuthService authService)
     {
         _accountService = accountService;
         _activityLogger = activityLogger;
+        _authService = authService;
     }
 
     // 帳號清單 server-side 分頁端點：帳號管理表格按需向這裡取「單頁」基本資料，
@@ -35,6 +38,14 @@ public class AccountsController : ControllerBase
     {
         var result = await _accountService.GetAccountsForExportAsync();
         return Ok(result);
+    }
+
+    // 查詢 [WEB].[dbo].[notes_person] 自動解析姓名與部門（供前端設定帳號表單自動填入用）
+    [HttpGet("LookupPerson")]
+    public async Task<IActionResult> LookupPerson([FromQuery] string empId)
+    {
+        var (found, name, department) = await _authService.ResolvePersonInfoAsync(empId);
+        return Ok(new { success = true, found, empId, name, department });
     }
 
     [HttpGet("{id}")]

@@ -10,11 +10,13 @@ public class AccountService : IAccountService
 {
     private readonly AppDbContext _context;
     private readonly ISettingsService _settingsService;
+    private readonly IAuthService _authService;
 
-    public AccountService(AppDbContext context, ISettingsService settingsService)
+    public AccountService(AppDbContext context, ISettingsService settingsService, IAuthService authService)
     {
         _context = context;
         _settingsService = settingsService;
+        _authService = authService;
     }
 
     public async Task<(List<object> items, int total)> GetAccountsPagedAsync(int page, int pageSize, string? q)
@@ -53,6 +55,7 @@ public class AccountService : IAccountService
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .Include(a => a.MapAccountRoles)
+            .Include(a => a.MapAccountManageMenus)
             .Include(a => a.MapAccountDefaultPages)
             .AsSplitQuery()
             .ToListAsync();
@@ -63,8 +66,9 @@ public class AccountService : IAccountService
             name = a.Name,
             department = a.Department,
             roleLevel = a.RoleLevel,
+            canEditOthers = a.CanEditOthers,
             assignedRoles = a.MapAccountRoles?.Select(m => m.RoleId).ToList() ?? new List<string>(),
-            // 帳號管理列表只顯示「登入預設首頁」與「可視群組版面」→ 需 defaultPages + assignedRoles 即可
+            manageableMenus = a.MapAccountManageMenus?.Select(m => m.MenuId).ToList() ?? new List<string>(),
             defaultPages = a.MapAccountDefaultPages?.ToDictionary(m => m.FabId, m => m.MenuId ?? "") ?? new Dictionary<string, string>()
         }).Cast<object>().ToList();
 
@@ -150,11 +154,28 @@ public class AccountService : IAccountService
         var (refsOk, refsErr) = await ValidateMappingRefsAsync(dto);
         if (!refsOk) return (false, refsErr);
 
+        var name = dto.Name;
+        var dept = dto.Department;
+        if (string.IsNullOrWhiteSpace(name) || string.Equals(name, dto.EmpId, StringComparison.OrdinalIgnoreCase) || string.IsNullOrWhiteSpace(dept))
+        {
+            var (found, pName, pDept) = await _authService.ResolvePersonInfoAsync(dto.EmpId);
+            if (found)
+            {
+                if (string.IsNullOrWhiteSpace(name) || string.Equals(name, dto.EmpId, StringComparison.OrdinalIgnoreCase)) name = pName;
+                if (string.IsNullOrWhiteSpace(dept)) dept = pDept;
+            }
+            else
+            {
+                if (string.IsNullOrWhiteSpace(name)) name = dto.EmpId;
+                if (string.IsNullOrWhiteSpace(dept)) dept = "";
+            }
+        }
+
         var account = new Account
         {
             EmpId = dto.EmpId,
-            Name = dto.Name,
-            Department = dto.Department,
+            Name = name,
+            Department = dept,
             RoleLevel = dto.RoleLevel,
             CanEditOthers = dto.CanEditOthers
         };
@@ -242,8 +263,25 @@ public class AccountService : IAccountService
         var (refsOk, refsErr) = await ValidateMappingRefsAsync(dto);
         if (!refsOk) return (false, refsErr, false); // 驗證失敗（stale id）、帳號存在 → 400
 
-        account.Name = dto.Name;
-        account.Department = dto.Department;
+        var name = dto.Name;
+        var dept = dto.Department;
+        if (string.IsNullOrWhiteSpace(name) || string.Equals(name, empId, StringComparison.OrdinalIgnoreCase) || string.IsNullOrWhiteSpace(dept))
+        {
+            var (found, pName, pDept) = await _authService.ResolvePersonInfoAsync(empId);
+            if (found)
+            {
+                if (string.IsNullOrWhiteSpace(name) || string.Equals(name, empId, StringComparison.OrdinalIgnoreCase)) name = pName;
+                if (string.IsNullOrWhiteSpace(dept)) dept = pDept;
+            }
+            else
+            {
+                if (string.IsNullOrWhiteSpace(name)) name = empId;
+                if (string.IsNullOrWhiteSpace(dept)) dept = "";
+            }
+        }
+
+        account.Name = name;
+        account.Department = dept;
         account.RoleLevel = dto.RoleLevel;
         account.CanEditOthers = dto.CanEditOthers;
 

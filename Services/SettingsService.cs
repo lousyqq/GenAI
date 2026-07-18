@@ -27,7 +27,7 @@ public class SettingsService : ISettingsService
 
     private static readonly string[] TableNames = new[]
     {
-        "Menus", "Fabs", "Roles", "Accounts", "Apps", "Requests",
+        "Menus", "Fabs", "Roles", "Accounts", "Apps",
         "Map_Fab_Role", "Map_Account_Role", "Map_Account_ManageMenu",
         "Map_Role_Menu", "Map_Menu_Structure", "Map_Account_DefaultPage",
         // ⚠️ PersonalSettings 刻意「不」列入全量覆寫清單：它是 per-user 自訂版面，
@@ -129,8 +129,8 @@ public class SettingsService : ISettingsService
                     volatileData = new Dictionary<string, object>();
                     try
                     {
-                        volatileData["Requests"] = ConvertToList(await _dbContext.Requests.AsNoTracking().ToListAsync());
-
+                        // Requests 功能已移除，volatile (shared) data 目前留空或提供其他共享動態資料擴充用
+                        volatileData = new Dictionary<string, object>();
                         _cache.Set(InitialDataCacheKey_Volatile, volatileData, TimeSpan.FromSeconds(10));
                     }
                     catch (Exception ex)
@@ -163,8 +163,8 @@ public class SettingsService : ISettingsService
         dbData["Map_Account_DenyMenu"] = ConvertToList(await _dbContext.MapAccountDenyMenus.AsNoTracking().Where(m => m.EmpId == empId).ToListAsync());
 
         // 若載入不全 (某部分 DB 斷線)，直接丟出例外，避免前端拿到殘缺快取。
-        //   9 (global 共享快取) + 1 (Requests 共享快取) + 7 (per-caller 帳號相關表) = 17。
-        if (dbData.Count < 17)
+        //   9 (global 共享快取) + 7 (per-caller 帳號相關表) = 16。
+        if (dbData.Count < 16)
         {
             throw new Exception("部分資料表載入失敗，無法回傳完整的 InitialData");
         }

@@ -1,13 +1,13 @@
 // === admin/misc-manage.js - AppGrid + 需求申請 + 審核 + Excel 匯出 + 圖示工具 ===
 
-import { getAppItems, getCustomMenus, getFabs, getPersonalSettings, getRequests, getRoles, savePersonalSettings } from '../config.js?v=20260607k';
+import { getAppItems, getCustomMenus, getFabs, getPersonalSettings, getRoles, savePersonalSettings } from '../config.js?v=20260607k';
 
 
 import { hideModalSafely, showModalSafely } from './modal-utils.js?v=20260607k';
 import { batchSaveMenusAPI, deleteAppAPI, fetchInitialDataFromDB, saveAppAPI, syncDataToDB } from '../api.js?v=20260607k';
 import { initDashboardUI } from '../main.js?v=20260607k';
 import { renderSidebarMenus } from '../render/sidebar.js?v=20260607k';
-import { renderAppGrid, renderApplyTable, renderAuditTable, renderMenuConfigTable, renderPersonalMenuManage, renderWebpageTable } from '../render/tables.js?v=20260607k';
+import { renderAppGrid, renderMenuConfigTable, renderPersonalMenuManage, renderWebpageTable } from '../render/tables.js?v=20260607k';
 import { customAlert, customConfirm, updateSyncButtonUI } from '../ui/dialogs.js?v=20260607k';
 import { navTo } from '../ui/navigation.js?v=20260607k';
 import { appState } from '../store.js?v=20260607k';
@@ -386,166 +386,7 @@ export function handleAppIconUpload(e) {
     }
 }
 
-// === Apply & Audit 申請與審核 ===
-export function openApplyModal(id = null) {
-    try {
-        const reasonInput = document.getElementById('applyReason');
-        const idInput = document.getElementById('applyReqId');
-        const typeInput = document.getElementById('applyType');
-        const fabInput = document.getElementById('applyFab');
 
-        if (id) {
-            const req = getRequests().find(r => window.cleanId(r.id) === window.cleanId(id));
-            if (req) {
-                reasonInput.value = req.reason; idInput.value = req.id;
-                if (typeInput) typeInput.value = req.reqType || '權限開通';
-                if (fabInput) fabInput.value = req.fab || '全域 (Global)';
-            }
-        } else {
-            reasonInput.value = ''; idInput.value = '';
-            if (typeInput) typeInput.value = '權限開通';
-            if (fabInput) fabInput.value = '全域 (Global)';
-        }
-
-        showModalSafely('applyModal');
-    } catch (e) { console.error("[openApplyModal] 錯誤:", e); }
-}
-
-export async function submitApplyItem(e) {
-    // ⭐️ 核心防重整
-    if (e && typeof e.preventDefault === 'function') e.preventDefault();
-    else if (window.event && typeof window.event.preventDefault === 'function') window.event.preventDefault();
-
-    try {
-        const id = document.getElementById('applyReqId').value;
-        const reason = document.getElementById('applyReason').value.trim();
-        const reqType = document.getElementById('applyType') ? document.getElementById('applyType').value : '系統需求';
-        const fab = document.getElementById('applyFab') ? document.getElementById('applyFab').value : '全域';
-
-        if (!reason) { customAlert('請填寫需求說明！'); return false; }
-
-        const payload = {
-            requestId: id || ('req_' + Date.now()),
-            reqType: reqType,
-            fab: fab,
-            reason: reason
-        };
-
-        const response = await fetch('/api/Requests', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-
-        if (!response.ok) {
-            console.error("API 回傳失敗:", response.status);
-            return false;
-        }
-
-        // 重新拉取最新資料並重新渲染
-        await window.fetchInitialDataFromDB();
-        
-        hideModalSafely('applyModal');
-        if (typeof renderApplyTable === 'function') renderApplyTable();
-        customAlert(id ? '需求申請已重新送出！' : '您的需求申請已成功送出！系統管理員將盡快為您處理。');
-    } catch (error) { console.error("[submitApplyItem] 錯誤:", error); }
-    return false;
-}
-
-window.deleteApplyItem = function (id) {
-    if (typeof customConfirm !== 'function') return;
-    customConfirm('確定要刪除此申請紀錄嗎？', async () => {
-        try {
-            await fetch('/api/Requests/' + id, { method: 'DELETE' });
-            await window.fetchInitialDataFromDB();
-            if (typeof renderApplyTable === 'function') renderApplyTable();
-        } catch (e) {
-            console.error("刪除失敗", e);
-        }
-    });
-};
-
-export function withdrawApply(id) {
-    try {
-        document.getElementById('withdrawReqId').value = id;
-        document.getElementById('withdrawReason').value = '';
-        showModalSafely('withdrawModal');
-    } catch (e) { console.error("[withdrawApply] 錯誤:", e); }
-}
-
-export async function submitWithdrawItem(e) {
-    // ⭐️ 核心防重整
-    if (e && typeof e.preventDefault === 'function') e.preventDefault();
-    else if (window.event && typeof window.event.preventDefault === 'function') window.event.preventDefault();
-
-    try {
-        const id = document.getElementById('withdrawReqId').value;
-        const reason = document.getElementById('withdrawReason').value.trim();
-
-        await fetch('/api/Requests/' + id + '/Withdraw', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ reason: reason })
-        });
-
-        await window.fetchInitialDataFromDB();
-        
-        hideModalSafely('withdrawModal');
-        if (typeof renderApplyTable === 'function') renderApplyTable();
-    } catch (error) { console.error("[submitWithdrawItem] 錯誤:", error); }
-    return false;
-}
-
-export function openAuditModal(id) {
-    try {
-        const r = getRequests().find(x => window.cleanId(x.id) === window.cleanId(id));
-        if (!r) { console.error("找不到對應的申請資料 (ID: " + id + ")"); return; }
-
-        document.getElementById('auditReqId').value = r.id;
-        document.getElementById('auditApplicant').value = `${r.empName} (${r.empId})`;
-
-        let dateStr = r.timestamp;
-        if (typeof r.timestamp === 'number') {
-            let now = new Date(r.timestamp); let pad = (n) => n < 10 ? '0' + n : n;
-            dateStr = now.getFullYear() + '/' + pad(now.getMonth() + 1) + '/' + pad(now.getDate()) + ' ' + pad(now.getHours()) + ':' + pad(now.getMinutes());
-        }
-        document.getElementById('auditTime').value = dateStr;
-
-        document.getElementById('auditType').value = r.reqType || '系統需求';
-        document.getElementById('auditFab').value = r.fab || '全域 (Global)';
-        document.getElementById('auditReasonDisplay').innerText = r.reason;
-        document.getElementById('auditStatus').value = r.status || 'pending';
-        document.getElementById('auditReply').value = r.reply || '';
-
-        showModalSafely('auditModal');
-    } catch (e) { console.error("[openAuditModal] 錯誤:", e); }
-}
-
-export async function saveAuditItem(e) {
-    // ⭐️ 核心防重整
-    if (e && typeof e.preventDefault === 'function') e.preventDefault();
-    else if (window.event && typeof window.event.preventDefault === 'function') window.event.preventDefault();
-
-    try {
-        const id = document.getElementById('auditReqId').value;
-        const status = document.getElementById('auditStatus').value;
-        const reply = document.getElementById('auditReply').value.trim();
-
-        await fetch('/api/Requests/' + id + '/Audit', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: status, reply: reply })
-        });
-
-        await window.fetchInitialDataFromDB();
-        hideModalSafely('auditModal');
-
-        if (typeof renderAuditTable === 'function') renderAuditTable();
-        customAlert("已成功儲存並同步回覆狀態給使用者！");
-
-    } catch (error) { console.error("[saveAuditItem] 錯誤:", error); }
-    return false;
-}
 
 // === Excel 匯出備份（對齊 TEST_20260429.html:2186-2259）===
 // ⚠️ O3 重構後 getAccounts()（appState.accounts）只回呼叫者自己一列，無法用來匯出全部帳號。
@@ -591,14 +432,12 @@ export async function createWorkbookData() {
         return null;
     }
     const apps = getAppItems();
-    const reqs = getRequests();
 
     appendSafeData(menus.map(m => ({ MenuId: m.id, SysName: m.name, DisplayName: m.displayName, MenuMode: m.menuMode, Url: m.url || '', TargetPage: m.targetPage || '', OpenTarget: m.target || '', Icon: m.icon || '', CreatedBy: m.createdBy || 'admin', IsEnabled: m.enabled !== false, IsPoolItem: m.isPoolItem === true, IsEdited: m.isEdited === true, GlobalOrder: m.order || 0 })), "Menus");
     appendSafeData(fabs.map(f => ({ FabId: f.id, FabName: f.fabName, DisplayName: f.displayName, DefaultLang: f.defaultLang || 'zh' })), "Fabs");
     appendSafeData(roles.map(r => ({ RoleId: r.id, GroupName: r.groupName })), "Roles");
     appendSafeData(accs.map(a => ({ EmpId: a.empId, Name: a.name, Department: a.department || '', RoleLevel: a.roleLevel || 'user', CanEditOthers: a.canEditOthers === true })), "Accounts");
     appendSafeData(apps.map(a => ({ AppId: a.id, MenuId: a.menuId, AppName: a.name, Url: a.url || '', IconBase64: a.iconBase64 || '', Target: a.target || '_blank' })), "Apps");
-    appendSafeData(reqs.map(r => ({ RequestId: r.id, EmpId: r.empId, EmpName: r.empName, Reason: r.reason, Timestamp: r.timestamp, Status: r.status, WithdrawReason: r.withdrawReason || '', Reply: r.reply || '' })), "Requests");
 
     let mapFabRole = []; fabs.forEach(f => { if (f.assignedRoles) f.assignedRoles.forEach(rId => mapFabRole.push({ FabId: f.id, RoleId: rId })); });
     appendSafeData(mapFabRole.length ? mapFabRole : [{ FabId: '', RoleId: '' }], "Map_Fab_Role");
@@ -965,12 +804,6 @@ window.openAppGridModal = openAppGridModal;
 window.saveAppItem = saveAppItem;
 window.deleteAppItem = deleteAppItem;
 window.handleAppIconUpload = handleAppIconUpload;
-window.openApplyModal = openApplyModal;
-window.submitApplyItem = submitApplyItem;
-window.withdrawApply = withdrawApply;
-window.submitWithdrawItem = submitWithdrawItem;
-window.openAuditModal = openAuditModal;
-window.saveAuditItem = saveAuditItem;
 window.createWorkbookData = createWorkbookData;
 window.refreshServerCache = refreshServerCache;
 window.exportConfig = exportConfig;

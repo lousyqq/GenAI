@@ -1,12 +1,12 @@
 // === render/tables.js - 管理表格渲染 (Fab, Role, Account, Webpage, MenuConfig, Apply, Audit, AppGrid) ===
 
-import { getCustomMenus, getDataTableLang, getFabs, getPersonalSettings, getRequests, getRoles, savePersonalSettings, t } from '../config.js?v=20260607k';
+import { getCustomMenus, getDataTableLang, getFabs, getPersonalSettings, getRoles, savePersonalSettings, t } from '../config.js?v=20260607k';
 
 
 import { deleteAccount, editAccount } from '../admin/account-manage.js?v=20260607k';
 import { deleteFab, editFab } from '../admin/fab-manage.js?v=20260607k';
 import { deleteMenuNodeItem, deleteWebpageItem, editPersonalMenu, openAddMenuNodeModal, openAddWebpageModal } from '../admin/menu-manage.js?v=20260607k';
-import { handleDragLeave, handleDragOver, handleDragStart, handleDrop, openAuditModal, withdrawApply } from '../admin/misc-manage.js?v=20260607k';
+import { handleDragLeave, handleDragOver, handleDragStart, handleDrop } from '../admin/misc-manage.js?v=20260607k';
 import { deleteRole, editRole } from '../admin/role-manage.js?v=20260607k';
 import { getDtPageLen, initDataTable, rememberDtPageLen, renderSidebarMenus, safeDestroyDataTable } from './sidebar.js?v=20260607k';
 import { generateIconHtml } from '../ui/dialogs.js?v=20260607k';
@@ -374,8 +374,38 @@ function _accRowData(a) {
     const aDept = window.escapeHTML(a.department || a.Department || '');
     const aLevel = a.roleLevel || a.RoleLevel || '';
     const lvlBadge = aLevel === 'admin' ? '<span class="badge bg-danger">Admin</span>' : '<span class="badge bg-secondary">User</span>';
-    const fabBadges = _accFabBadges(a.assignedRoles || a.AssignedRoles || []);
     const defPagesHtml = _accDefaultPagesHtml(a.defaultPages || a.DefaultPages || {});
+    
+    const canEditOthers = a.canEditOthers || a.CanEditOthers || false;
+    const manageMenus = a.manageableMenus || a.ManageableMenus || [];
+    const isAdminRole = String(aLevel).toLowerCase() === 'admin';
+
+    let delegationStatusHtml = '';
+    let manageableMenusHtml = '';
+
+    if (isAdminRole) {
+        delegationStatusHtml = '<span class="badge bg-success"><i class="fas fa-crown me-1"></i>全權管理 (Admin)</span>';
+        manageableMenusHtml = '<span class="badge bg-light text-dark border"><i class="fas fa-check-double text-success me-1"></i>全系統所有選單</span>';
+    } else {
+        if (!manageMenus || manageMenus.length === 0) {
+            delegationStatusHtml = '<span class="badge bg-secondary">無</span>';
+            manageableMenusHtml = '<span class="text-muted">-</span>';
+        } else {
+            if (canEditOthers) {
+                delegationStatusHtml = '<span class="badge bg-primary">有 / 允許變更他人內容</span>';
+            } else {
+                delegationStatusHtml = '<span class="badge bg-info text-dark">有 / 僅限自建內容</span>';
+            }
+            const allMenus = typeof getCustomMenus === 'function' ? getCustomMenus() : [];
+            const badges = manageMenus.map(mId => {
+                const found = allMenus.find(m => window.cleanId(m.id || m.MenuId) === window.cleanId(mId));
+                const dName = found ? (found.displayName || found.DisplayName || found.name || found.SysName || mId) : mId;
+                return `<span class="badge bg-outline-primary border border-primary text-primary me-1 mb-1 d-inline-block">${window.escapeHTML(dName)}</span>`;
+            }).join('');
+            manageableMenusHtml = `<div style="white-space: normal; max-width: 320px;">${badges}</div>`;
+        }
+    }
+
     const jsId = _jsArg(aId);
     const idCell = window.escapeHTML(aId);
     const actionBtns = `<div class="d-flex flex-nowrap justify-content-center gap-2"><button type="button" class="btn btn-sm btn-outline-primary" style="width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center;" onclick="event.stopPropagation(); editAccount('${jsId}');" title="編輯"><i class="fas fa-edit"></i></button><button type="button" class="btn btn-sm btn-outline-danger" style="width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center;" onclick="event.stopPropagation(); deleteAccount('${jsId}')" title="刪除"><i class="fas fa-trash-alt"></i></button></div>`;
@@ -384,7 +414,8 @@ function _accRowData(a) {
         `<div class="fw-bold text-dark">${aName}</div><div class="small text-muted">${aDept}</div>`,
         lvlBadge,
         defPagesHtml,
-        `<div style="white-space: normal;">${fabBadges}</div>`,
+        delegationStatusHtml,
+        manageableMenusHtml,
         actionBtns
     ];
 }
@@ -431,8 +462,8 @@ export function renderAccountTable() {
                 searching: true,
                 pageLength: getDtPageLen('dtAccount'), lengthMenu: [10, 25, 50, 100],
                 ordering: false, order: [], autoWidth: false, stateSave: false,
-                columns: [{ data: 0 }, { data: 1 }, { data: 2 }, { data: 3 }, { data: 4 }, { data: 5 }],
-                columnDefs: [{ targets: 5, className: 'text-center align-middle', width: '90px' }, { targets: [3, 4], className: 'text-start align-middle' }, { targets: [0, 1, 2], className: 'align-middle' }],
+                columns: [{ data: 0 }, { data: 1 }, { data: 2 }, { data: 3 }, { data: 4 }, { data: 5 }, { data: 6 }],
+                columnDefs: [{ targets: 6, className: 'text-center align-middle', width: '90px' }, { targets: [3, 5], className: 'text-start align-middle' }, { targets: [0, 1, 2, 4], className: 'align-middle' }],
                 ajax: function (data, callback) {
                     const pageSize = data.length > 0 ? data.length : 10;
                     const page = Math.floor((data.start || 0) / pageSize) + 1;
@@ -636,67 +667,7 @@ export function renderMenuConfigTable() {
     initDataTable('dtMenuConfig', true);
 }
 
-export function renderApplyTable() {
-    safeDestroyDataTable('dtApply'); const tbody = document.getElementById('applyTableBody');
-    if (!tbody || !appState.currentUser) return; tbody.innerHTML = '';
-    const reqs = getRequests().filter(r => (r.empId || r.EmpId) === appState.currentUser.id).sort((a, b) => (b.timestamp || b.Timestamp) - (a.timestamp || a.Timestamp));
-    const statusMap = { 'pending': '<span class="badge bg-secondary">待審核</span>', 'processing': '<span class="badge bg-primary">處理中</span>', 'resolved': '<span class="badge bg-success">已完成</span>', 'rejected': '<span class="badge bg-danger">已駁回</span>', 'withdrawn': '<span class="badge bg-dark">已撤回</span>' };
 
-    let htmlBuffer = [];
-    reqs.forEach(r => {
-        let dateStr = r.timestamp || r.Timestamp;
-        let d = new Date(dateStr);
-        if (typeof dateStr === 'string' && /^\d+$/.test(dateStr)) { d = new Date(parseInt(dateStr, 10)); }
-        if (!isNaN(d.getTime())) {
-            let pad = (n) => n < 10 ? '0' + n : n;
-            dateStr = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
-        }
-        const typeBadge = `<span class="badge border border-secondary text-secondary bg-light mb-1">${window.escapeHTML(r.reqType || r.ReqType || '系統需求')}</span>`;
-        const replyTxt = r.reply || r.Reply;
-        const replyMsg = replyTxt ? `<div class="small text-primary fw-bold text-truncate" style="max-width: 250px;" title="${window.escapeHTML(replyTxt)}"><i class="fas fa-comment-dots me-1"></i>${window.escapeHTML(replyTxt)}</div>` : '<span class="text-muted small"><i class="fas fa-hourglass-half me-1"></i>等待管理員處理中...</span>';
-
-        const rStatus = r.status || r.Status || 'pending'; const rId = r.id || r.RequestId || r.Id;
-        let actionBtnsHtml = '';
-        if (rStatus === 'withdrawn') actionBtnsHtml = `<button type="button" class="btn btn-sm btn-outline-danger py-0 px-2 fw-bold text-nowrap" onclick="event.stopPropagation(); deleteApplyItem('${rId}')"><i class="fas fa-trash-alt me-1"></i> 刪除紀錄</button>`;
-        else if (rStatus === 'pending' || !rStatus) actionBtnsHtml = `<button type="button" class="btn btn-sm btn-outline-warning text-dark py-0 px-2 fw-bold text-nowrap" onclick="event.stopPropagation(); withdrawApply('${rId}');"><i class="fas fa-undo me-1"></i> 撤回</button>`;
-        else actionBtnsHtml = `<span class="badge bg-light text-muted border">審核中/已鎖定</span>`;
-
-        let actionBtns = `<div class="d-flex flex-nowrap justify-content-center gap-2">${actionBtnsHtml}</div>`;
-        let wdInfo = rStatus === 'withdrawn' ? `<div class="text-danger mt-1 small fw-bold"><i class="fas fa-info-circle"></i> 撤回原因: ${window.escapeHTML(r.withdrawReason || r.WithdrawReason)}</div>` : '';
-
-        htmlBuffer.push(`<tr><td class="small text-muted align-middle">${dateStr}</td><td class="align-middle">${typeBadge}<br><span class="fw-bold small text-dark">${window.escapeHTML(r.fab || r.FabId || '全域 (Global)')}</span></td><td class="align-middle text-start"><div class="fw-bold text-dark" style="white-space: pre-wrap; font-size:0.85rem;">${window.escapeHTML(r.reason || r.Reason)}</div>${wdInfo}</td><td class="align-middle">${statusMap[rStatus]}</td><td class="align-middle text-start">${replyMsg}</td><td class="text-center align-middle" onmouseenter="this.closest('tr').setAttribute('draggable', false)" onmouseleave="this.closest('tr').setAttribute('draggable', true)" style="white-space: nowrap; width: 1%;">${actionBtns}</td></tr>`);
-    });
-    tbody.innerHTML = htmlBuffer.join('');
-    initDataTable('dtApply', true);
-}
-
-export function renderAuditTable() {
-    safeDestroyDataTable('dtAudit'); const tbody = document.getElementById('auditTableBody'); if (!tbody) return; tbody.innerHTML = '';
-    const reqs = getRequests().sort((a, b) => (b.timestamp || b.Timestamp) - (a.timestamp || a.Timestamp));
-    const statusMap = { 'pending': '<span class="badge bg-secondary">待審核</span>', 'processing': '<span class="badge bg-primary">處理中</span>', 'resolved': '<span class="badge bg-success">已完成</span>', 'rejected': '<span class="badge bg-danger">已駁回</span>', 'withdrawn': '<span class="badge bg-dark">已撤回</span>' };
-
-    let htmlBuffer = [];
-    reqs.forEach(r => {
-        let dateStr = r.timestamp || r.Timestamp;
-        let d = new Date(dateStr);
-        if (typeof dateStr === 'string' && /^\d+$/.test(dateStr)) { d = new Date(parseInt(dateStr, 10)); }
-        if (!isNaN(d.getTime())) {
-            let pad = (n) => n < 10 ? '0' + n : n;
-            dateStr = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
-        }
-        const typeBadge = `<span class="badge border border-secondary text-secondary bg-light mb-1">${window.escapeHTML(r.reqType || r.ReqType || '系統需求')}</span>`;
-        const rStatus = r.status || r.Status || 'pending';
-        let wdInfo = rStatus === 'withdrawn' ? `<div class="text-danger mt-1 small fw-bold"><i class="fas fa-info-circle"></i> 撤回原因: ${window.escapeHTML(r.withdrawReason || r.WithdrawReason)}</div>` : '';
-        const replyTxt = r.reply || r.Reply;
-        const replyMsg = replyTxt ? `<div class="small text-primary fw-bold text-truncate" style="max-width: 200px;" title="${window.escapeHTML(replyTxt)}"><i class="fas fa-comment-dots me-1"></i>${window.escapeHTML(replyTxt)}</div>` : '<span class="text-muted small">尚未回覆</span>';
-        const rId = r.id || r.RequestId || r.Id;
-
-        let actionBtns = `<div class="d-flex flex-nowrap justify-content-center gap-2"><button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 fw-bold text-nowrap" onclick="event.stopPropagation(); openAuditModal('${rId}');"><i class="fas fa-reply me-1"></i>回覆</button></div>`;
-        htmlBuffer.push(`<tr><td class="align-middle"><div class="fw-bold text-dark">${window.escapeHTML(r.empName || r.EmpName)}</div><div class="small text-muted fw-normal">${window.escapeHTML(r.empId || r.EmpId)}</div></td><td class="small text-muted align-middle">${dateStr}</td><td class="align-middle">${typeBadge}<br><span class="fw-bold small text-dark">${window.escapeHTML(r.fab || r.FabId || '全域')}</span></td><td class="align-middle text-start" style="max-width: 250px;"><div class="text-truncate text-dark fw-bold" title="${window.escapeHTML(r.reason || r.Reason)}">${window.escapeHTML(r.reason || r.Reason)}</div>${wdInfo}</td><td class="align-middle">${statusMap[rStatus]}</td><td class="align-middle text-start">${replyMsg}</td><td class="text-center align-middle" onmouseenter="this.closest('tr').setAttribute('draggable', false)" onmouseleave="this.closest('tr').setAttribute('draggable', true)" style="white-space: nowrap; width: 1%;">${actionBtns}</td></tr>`);
-    });
-    tbody.innerHTML = htmlBuffer.join('');
-    initDataTable('dtAudit', true);
-}
 
 export function renderAppGrid(containerId, appList) {
     const container = document.getElementById(containerId); if (!container) return; let html = '';
@@ -769,7 +740,5 @@ window.renderRoleTable = renderRoleTable;
 window.renderAccountTable = renderAccountTable;
 window.renderWebpageTable = renderWebpageTable;
 window.renderMenuConfigTable = renderMenuConfigTable;
-window.renderApplyTable = renderApplyTable;
-window.renderAuditTable = renderAuditTable;
 window.renderAppGrid = renderAppGrid;
 

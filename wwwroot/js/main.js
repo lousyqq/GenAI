@@ -16,6 +16,7 @@ import './admin/account-manage.js?v=20260607h';
 import './admin/menu-manage.js?v=20260607h';
 import './admin/misc-manage.js?v=20260607h';
 import './admin/activity-log.js?v=20260607h';
+import './admin/stats-ui.js?v=20260718';
 
 export function initModalSafely(id) { const el = document.getElementById(id); return el ? new bootstrap.Modal(el) : null; }
 
@@ -43,7 +44,28 @@ export function initDashboardUI(stayOnCurrentPage = false) {
     if (!stayOnCurrentPage) {
         if (typeof window.goDefaultHome === 'function') window.goDefaultHome();
     }
+    if (typeof window.pingSiteVisitor === 'function') {
+        setTimeout(() => window.pingSiteVisitor(), 1500);
+    }
 }
+
+export async function pingSiteVisitor() {
+    try {
+        const empId = appState.currentUser ? (appState.currentUser.empId || appState.currentUser.id) : null;
+        const empName = appState.currentUser ? appState.currentUser.name : null;
+        const dept = appState.currentUser ? appState.currentUser.department : null;
+
+        await fetch(window.toAppUrl('/api/Stats/Ping'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ empId, empName, department: dept }),
+            credentials: 'same-origin'
+        });
+    } catch (e) {
+        console.warn('背景流量統計心跳 (Stats/Ping) 異常，不影響操作:', e);
+    }
+}
+window.pingSiteVisitor = pingSiteVisitor;
 
 async function waitForTryAutoLogin(timeoutMs = 5000) {
     const start = Date.now();
@@ -73,23 +95,23 @@ export function restoreLoginFromStorage() {
 
         if (typeof getAccounts === 'function') {
             let freshAcc = getAccounts().find(a => String(a.empId).toLowerCase() === String(storedEmpId).toLowerCase());
-            if (!freshAcc) {
-                // 本地 user 在 DB 查無（帳號被刪、或 cookie 身分與 localStorage 身分不一致）
-                //   → 靜默清掉 localStorage、return false 交給 tryAutoLogin 走 Windows 自動偵測重登。
-                //   ⚠️ 刻意「不」彈任何提示視窗（曾設 umc_account_deleted_hint 讓登入框彈
-                //   「帳號已被移除」警告，但企業內部員工桌機開頁時會被誤傷、純屬擾民，
-                //   2026-07-03 依使用者要求移除）——有權限者由 tryAutoLogin 靜默重新登入
-                //   直達預設首頁；無權限者自然停在登入框，兩者皆不需要彈窗。
-                localStorage.removeItem('umc_current_user');
-                return false;
+            if (freshAcc) {
+                tempUser.roleLevel = freshAcc.roleLevel;
+                tempUser.assignedRoles = freshAcc.assignedRoles || [];
+                tempUser.manageableMenus = freshAcc.manageableMenus || [];
+                tempUser.canEditOthers = freshAcc.canEditOthers || false;
+                tempUser.defaultPages = freshAcc.defaultPages || {};
+                tempUser.loginCount = typeof freshAcc.loginCount === 'number' ? freshAcc.loginCount : parseInt(freshAcc.loginCount) || 0;
+                tempUser.lastLoginTime = freshAcc.lastLoginTime || null;
+            } else {
+                // 若本地 accounts 還未同步該帳號（例如模擬新帳號初次進站、或 AutoProvision 自動開戶中），
+                // 優先保留 localStorage 既有身分並立即回傳 true 讓 UI 即時渲染上方導覽與工號，
+                // 稍後背景執行的 tryAutoLogin -> WhoAmI / completeLoginAfterAuth 會無縫補齊並更新最新 DB 資料。
+                tempUser.roleLevel = tempUser.roleLevel || 'user';
+                tempUser.assignedRoles = tempUser.assignedRoles || [];
+                tempUser.manageableMenus = tempUser.manageableMenus || [];
+                tempUser.loginCount = tempUser.loginCount || 1;
             }
-            tempUser.roleLevel = freshAcc.roleLevel;
-            tempUser.assignedRoles = freshAcc.assignedRoles || [];
-            tempUser.manageableMenus = freshAcc.manageableMenus || [];
-            tempUser.canEditOthers = freshAcc.canEditOthers || false;
-            tempUser.defaultPages = freshAcc.defaultPages || {};
-            tempUser.loginCount = typeof freshAcc.loginCount === 'number' ? freshAcc.loginCount : parseInt(freshAcc.loginCount) || 0;
-            tempUser.lastLoginTime = freshAcc.lastLoginTime || null;
         }
 
         appState.currentUser = tempUser;
@@ -267,9 +289,6 @@ function initModalInstances() {
         appState.modals.menuNode = initModalSafely('menuNodeModal');
         appState.modals.personalMenu = initModalSafely('personalMenuModal');
         appState.modals.appGrid = initModalSafely('appGridModal');
-        appState.modals.apply = initModalSafely('applyModal');
-        appState.modals.withdraw = initModalSafely('withdrawModal');
-        appState.modals.audit = initModalSafely('auditModal');
         appState.systemAlertModalObj = initModalSafely('systemAlertModal');
         appState.systemConfirmModalObj = initModalSafely('systemConfirmModal');
     }

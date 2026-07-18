@@ -106,7 +106,6 @@ public class SettingsController : Controller
             //   但「隨帳號數成長」的帳號權限表只回自己這一列 —— 帳號清單改由 GET /api/Accounts 分頁端點按需提供。
             //   目的：admin 每次 GetInitialData 的回應不再夾帶全部帳號（10 萬帳號時前端不致崩潰），
             //         同時保留自己這一列供登入者解析（restoreLoginFromStorage 找不到自己會誤判帳號被刪）與 MyProfile 覆寫。
-            //   Requests 刻意「不」收斂（admin 需在「撤回申請」頁看到所有人的申請）。
             var adminEmpId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
             var adminScoped = new Dictionary<string, object>();
             foreach (var kvp in data)
@@ -195,7 +194,7 @@ public class SettingsController : Controller
 
     // ===== admin 帳號權限表收斂判定 =====
     // 「隨帳號數成長」且 admin 不需在 GetInitialData 拿全量的表：Accounts、PersonalSettings、所有 Map_Account_*。
-    //   （帳號清單→分頁端點；自己的權限→MyProfile；個人版面→只快取自己。Requests 不在此列，admin 需看全部。）
+    //   （帳號清單→分頁端點；自己的權限→MyProfile；個人版面→只快取自己。）
     private static bool IsOwnAccountScopedTable(string tableName)
         => string.Equals(tableName, "Accounts", StringComparison.OrdinalIgnoreCase)
         || string.Equals(tableName, "PersonalSettings", StringComparison.OrdinalIgnoreCase)
@@ -236,7 +235,7 @@ public class SettingsController : Controller
         return tableName switch
         {
             // 個人資料表 — 只留自己
-            "Accounts" or "Requests" or "PersonalSettings" => list.Where(MatchEmpId).ToList(),
+            "Accounts" or "PersonalSettings" => list.Where(MatchEmpId).ToList(),
             var s when s.StartsWith("Map_Account_", StringComparison.OrdinalIgnoreCase) => list.Where(MatchEmpId).ToList(),
 
             // 看板本體 — 只留可見的
