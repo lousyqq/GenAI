@@ -3,8 +3,8 @@
 import { hideModalSafely, showModalSafely } from './modal-utils.js?v=20260607k';
 import { deleteAccountAPI, fetchInitialDataFromDB, saveAccountAPI } from '../api.js?v=20260607k';
 import { renderAccDefaultPagesUI, renderAccManageMenuCheckboxes, renderAccRoleCheckboxes } from '../render/account-ui.js?v=20260607k';
-import { renderSidebarMenus } from '../render/sidebar.js?v=20260607k';
-import { renderAccountTable } from '../render/tables.js?v=20260607k';
+import { renderSidebarMenus } from '../render/sidebar.js?v=20260719';
+import { renderAccountTable } from '../render/tables.js?v=20260719';
 import { customAlert, customConfirm } from '../ui/dialogs.js?v=20260607k';
 import { appState } from '../store.js?v=20260607k';
 

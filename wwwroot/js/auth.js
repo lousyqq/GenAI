@@ -6,9 +6,9 @@
 //   window.retryWhoAmI()     - 「重試偵測」按鈕
 //   window.logout()          - 右上頭像下拉的登出
 
-import { getAccounts } from './config.js?v=20260607k';
+import { getAccounts } from './config.js?v=20260719';
 import { fetchInitialDataFromDB } from './api.js?v=20260607k';
-import { initDashboardUI, restoreLoginFromStorage } from './main.js?v=20260607k';
+import { initDashboardUI, restoreLoginFromStorage } from './main.js?v=20260719';
 import { customAlert } from './ui/dialogs.js?v=20260607k';
 import { appState } from './store.js?v=20260607k';
 

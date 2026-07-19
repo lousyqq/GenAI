@@ -1,8 +1,8 @@
 // === render/sidebar.js - 側邊欄選單渲染 ===
 // ====== render.js 最上方的修復 ======
-import { getCustomMenus, getDataTableLang, getFabs, getPersonalSettings, getRoles, t } from '../config.js?v=20260607k';
+import { getCustomMenus, getDataTableLang, getFabs, getPersonalSettings, getRoles, t } from '../config.js?v=20260719';
 import { generateSidebarMenuItem } from './sidebar-item.js?v=20260607k';
-import { navTo, selectTopMenu } from '../ui/navigation.js?v=20260607k';
+import { navTo, selectTopMenu } from '../ui/navigation.js?v=20260719';
 import { appState } from '../store.js?v=20260607k';
 
 
@@ -217,7 +217,7 @@ export function safeDestroyDataTable(tableId) {
     } catch (e) { }
 }
 
-export function initDataTable(tableId, sortable = true) {
+export function initDataTable(tableId, sortable = true, defaultPageLen = 10) {
     setTimeout(() => {
         try {
             if (typeof $ === 'undefined' || !$.fn || !$.fn.DataTable) return;
@@ -229,7 +229,7 @@ export function initDataTable(tableId, sortable = true) {
             }
             const dt = $('#' + tableId).DataTable({
                 language: (typeof getDataTableLang === 'function') ? getDataTableLang() : {},
-                pageLength: getDtPageLen(tableId), lengthMenu: [10, 25, 50, 100], ordering: sortable, order: [], autoWidth: false, stateSave: false
+                pageLength: getDtPageLen(tableId, defaultPageLen), lengthMenu: [10, 25, 50, 100], ordering: sortable, order: [], autoWidth: false, stateSave: false
             });
             appState.dtInstances[tableId] = dt;
             // 還原摧毀前的分頁；資料列變少導致頁數縮減時 clamp 到最後一頁，避免落在空白頁（draw(false) 不重置分頁）。

@@ -1,10 +1,10 @@
 // === ui/navigation.js - 語系切換、選單導航、路由、iframe ===
-import { getCustomMenus, getFabs, getRoles, t } from '../config.js?v=20260607k';
+import { getCustomMenus, getFabs, getRoles, t } from '../config.js?v=20260719';
 import { loadActivityLogs } from '../admin/activity-log.js?v=20260607k';
-import { initSiteStats } from '../admin/stats-ui.js?v=20260718';
+import { initSiteStats } from '../admin/stats-ui.js?v=20260719';
 import { openAppGridPage } from '../admin/misc-manage.js?v=20260607k';
-import { renderSidebarMenus } from '../render/sidebar.js?v=20260607k';
-import { renderAccountTable, renderFabTable, renderMenuConfigTable, renderPersonalMenuManage, renderRoleTable, renderWebpageTable } from '../render/tables.js?v=20260607k';
+import { renderSidebarMenus } from '../render/sidebar.js?v=20260719';
+import { renderAccountTable, renderFabTable, renderMenuConfigTable, renderPersonalMenuManage, renderRoleTable, renderWebpageTable } from '../render/tables.js?v=20260719';
 import { appState } from '../store.js?v=20260607k';
 
 
@@ -557,6 +557,16 @@ export function navTo(pageId, element, subTitle = '') {
     if (pageId === 'page-account-manage' && typeof renderAccountTable === 'function') renderAccountTable();
     if (pageId === 'page-activity-log' && typeof loadActivityLogs === 'function') loadActivityLogs();
     if (pageId === 'page-site-stats' && typeof initSiteStats === 'function') initSiteStats();
+    if (pageId === 'page-unauthorized') {
+        // 空狀態文案依角色分流：純瀏覽者不該被指示去「選單配置管理」（他根本進不去），改引導至意見箱；
+        //   admin / 委派管理員才顯示配置指引。
+        const desc = document.getElementById('emptyFabDesc');
+        if (desc) {
+            desc.textContent = (typeof window.isPureViewer === 'function' && window.isPureViewer())
+                ? '目前尚未有可瀏覽的看板內容，歡迎透過左側選單下方的「意見箱」向管理團隊反映您的需求。'
+                : '請至右上角「系統設定 → 選單配置管理」新增看板內容。';
+        }
+    }
     if (pageId !== 'page-app-grid') appState.currentAppGridMenuId = null;
 }
 

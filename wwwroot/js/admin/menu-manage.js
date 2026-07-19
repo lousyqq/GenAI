@@ -1,13 +1,13 @@
 // === admin/menu-manage.js - 個人選單 + 看板管理 + 選單結構樹 ===
 
-import { getCustomMenus, getPersonalSettings, savePersonalSettings, t } from '../config.js?v=20260607k';
+import { getCustomMenus, getPersonalSettings, savePersonalSettings, t } from '../config.js?v=20260719';
 
 
 import { getSelectedIconVal, setIconValToModal } from './misc-manage.js?v=20260607k';
 import { hideModalSafely, showModalSafely } from './modal-utils.js?v=20260607k';
 import { batchDeleteMenusAPI, batchSaveMenusAPI, deleteMenuAPI, fetchInitialDataFromDB, saveMenuAPI } from '../api.js?v=20260607k';
-import { renderSidebarMenus } from '../render/sidebar.js?v=20260607k';
-import { renderMenuConfigTable, renderPersonalMenuManage, renderWebpageTable } from '../render/tables.js?v=20260607k';
+import { renderSidebarMenus } from '../render/sidebar.js?v=20260719';
+import { renderMenuConfigTable, renderPersonalMenuManage, renderWebpageTable } from '../render/tables.js?v=20260719';
 import { customAlert, customConfirm } from '../ui/dialogs.js?v=20260607k';
 import { appState } from '../store.js?v=20260607k';
 

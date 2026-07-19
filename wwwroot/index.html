@@ -29,7 +29,7 @@
     <link href="css/variables.css?v=20260607e" rel="stylesheet">
     <link href="css/navbar.css?v=20260607e" rel="stylesheet">
     <link href="css/sidebar.css?v=20260607e" rel="stylesheet">
-    <link href="css/components.css?v=20260607e" rel="stylesheet">
+    <link href="css/components.css?v=20260719" rel="stylesheet">
 </head>
 <body>
 
@@ -168,7 +168,9 @@
                     <div class="text-center mt-5" style="max-width: 600px; margin: 0 auto; padding: 40px;">
                         <i class="fas fa-folder-open text-secondary opacity-50 mb-3" style="font-size: 3rem;"></i>
                         <h5 class="fw-bold text-secondary" data-i18n="empty_fab_title">尚未配置看板</h5>
-                        <p class="text-muted mb-0 mt-2 small" data-i18n="empty_fab_desc">請由系統管理員於選單配置管理新增看板。</p>
+                        <!-- 文案由 navigation.js navTo('page-unauthorized') 依角色動態設定：
+                             純瀏覽者引導至意見箱（他進不去選單配置）；admin/委派者引導至選單配置管理 -->
+                        <p class="text-muted mb-0 mt-2 small" id="emptyFabDesc">目前尚未有可瀏覽的看板內容。</p>
                     </div>
                 </div>
 
@@ -237,6 +239,8 @@
                         <i class="fas fa-sitemap fs-5 me-2 text-primary"></i>
                         <span class="small fw-bold text-primary">此處用於建立「主選單群組」或「獨立網頁」。子選單請點擊「編輯結構」進入調整。</span>
                     </div>
+                    <!-- 委派管理員範圍提示：renderMenuConfigTable() 依身分動態填入；admin 隱藏 -->
+                    <div id="menuManageScopeHint" class="alert alert-warning bg-warning bg-opacity-10 border-0 mb-3 py-2 small" style="display: none;"></div>
                     <div class="card border-0 overflow-hidden shadow-sm">
                         <div class="card-body p-3 table-responsive">
                             <table id="dtMenuConfig" class="table table-custom align-middle text-center w-100">
@@ -418,7 +422,7 @@
                         <div class="col-12 col-sm-6 col-xl-3 d-flex">
                             <div class="card border-0 shadow-sm rounded-3 w-100 flex-fill p-3 d-flex flex-column justify-content-between" style="border-left: 4px solid #10b981 !important;">
                                 <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <div class="small text-secondary fw-bold">今日實際不重複使用人數 (Daily UV)</div>
+                                    <div class="small text-secondary fw-bold" title="同一位同仁當天進站多次僅計 1 人" style="cursor: help;">今日進站人數 <i class="far fa-question-circle text-muted small"></i></div>
                                     <div class="bg-success bg-opacity-10 text-success rounded-circle d-flex align-items-center justify-content-center" style="width: 42px; height: 42px; flex-shrink: 0;"><i class="fas fa-user-check fs-5"></i></div>
                                 </div>
                                 <div>
@@ -430,19 +434,19 @@
                         <div class="col-12 col-sm-6 col-xl-3 d-flex">
                             <div class="card border-0 shadow-sm rounded-3 w-100 flex-fill p-3 d-flex flex-column justify-content-between" style="border-left: 4px solid #3b82f6 !important;">
                                 <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <div class="small text-secondary fw-bold">今日總瀏覽進站次數 (Daily PV)</div>
+                                    <div class="small text-secondary fw-bold" title="今天所有頁面被開啟的總次數" style="cursor: help;">今日瀏覽次數 <i class="far fa-question-circle text-muted small"></i></div>
                                     <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 42px; height: 42px; flex-shrink: 0;"><i class="fas fa-mouse-pointer fs-5"></i></div>
                                 </div>
                                 <div>
                                     <h3 class="fw-bold mb-1 text-dark" id="statTodayPv">0</h3>
-                                    <div class="small text-muted">人均瀏覽: <span class="fw-bold text-dark" id="statTodayAvg">0</span> 次/人</div>
+                                    <div class="small text-muted">平均每人瀏覽: <span class="fw-bold text-dark" id="statTodayAvg">0</span> 次</div>
                                 </div>
                             </div>
                         </div>
                         <div class="col-12 col-sm-6 col-xl-3 d-flex">
                             <div class="card border-0 shadow-sm rounded-3 w-100 flex-fill p-3 d-flex flex-column justify-content-between" style="border-left: 4px solid #8b5cf6 !important;">
                                 <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <div class="small text-secondary fw-bold">本月實際不重複使用人數 (Monthly UV)</div>
+                                    <div class="small text-secondary fw-bold" title="同一位同仁當月進站多次僅計 1 人" style="cursor: help;">本月進站人數 <i class="far fa-question-circle text-muted small"></i></div>
                                     <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 42px; height: 42px; flex-shrink: 0; background-color: rgba(139, 92, 246, 0.1); color: #8b5cf6;"><i class="fas fa-users fs-5"></i></div>
                                 </div>
                                 <div>
@@ -454,12 +458,12 @@
                         <div class="col-12 col-sm-6 col-xl-3 d-flex">
                             <div class="card border-0 shadow-sm rounded-3 w-100 flex-fill p-3 d-flex flex-column justify-content-between" style="border-left: 4px solid #f59e0b !important;">
                                 <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <div class="small text-secondary fw-bold">本月累計總瀏覽量 (Monthly PV)</div>
+                                    <div class="small text-secondary fw-bold" title="本月所有頁面被開啟的總次數" style="cursor: help;">本月瀏覽次數 <i class="far fa-question-circle text-muted small"></i></div>
                                     <div class="bg-warning bg-opacity-10 text-warning rounded-circle d-flex align-items-center justify-content-center" style="width: 42px; height: 42px; flex-shrink: 0;"><i class="fas fa-fire fs-5"></i></div>
                                 </div>
                                 <div>
                                     <h3 class="fw-bold mb-1 text-dark" id="statMonthPv">0</h3>
-                                    <div class="small text-muted">月度人均: <span class="fw-bold text-dark" id="statMonthAvg">0</span> 次/人</div>
+                                    <div class="small text-muted">平均每人瀏覽: <span class="fw-bold text-dark" id="statMonthAvg">0</span> 次</div>
                                 </div>
                             </div>
                         </div>
@@ -470,8 +474,11 @@
                         <div class="col-xl-8 col-lg-7 d-flex">
                             <div class="card border-0 shadow-sm w-100 flex-fill d-flex flex-column">
                                 <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
-                                    <h6 class="mb-0 fw-bold text-dark" id="statsChartTitle"><i class="fas fa-chart-bar text-primary me-2"></i>每日使用人數與瀏覽走勢</h6>
-                                    <div class="small text-muted"><span class="badge bg-success me-1">&nbsp;</span> UV (不重複人數) <span class="badge bg-primary ms-3 me-1">&nbsp;</span> PV (總瀏覽次數)</div>
+                                    <h6 class="mb-0 fw-bold text-dark" id="statsChartTitle"><i class="fas fa-chart-bar text-primary me-2"></i>每日進站人數與瀏覽次數走勢</h6>
+                                    <div class="small text-muted d-flex align-items-center flex-wrap gap-3">
+                                        <span class="d-inline-flex align-items-center"><span class="stats-legend-dot" style="background: #10b981;"></span>進站人數（不重複計人）</span>
+                                        <span class="d-inline-flex align-items-center"><span class="stats-legend-dot" style="background: #3b82f6;"></span>瀏覽次數（頁面開啟總數）</span>
+                                    </div>
                                 </div>
                                 <div class="card-body p-4 d-flex flex-column justify-content-center" style="min-height: 280px; overflow-x: auto;">
                                     <div id="statsChartContainer" class="d-flex align-items-end justify-content-between gap-1 pt-3 pb-2" style="height: 240px; border-bottom: 2px solid #e2e8f0;">
@@ -586,17 +593,17 @@
     <script src="appbase.js"></script>
 
     <!-- __APP_VER__ 已在 modals.html fetch 之前定義；以下 <script src> 共用同一版本碼 -->
-    <script type="module" src="js/config.js?v=20260607k"></script>
+    <script type="module" src="js/config.js?v=20260719"></script>
     <script type="module" src="js/api.js?v=20260607k"></script>
     <script type="module" src="js/auth.js?v=20260607k"></script>
     <!-- ui 模組 (從 ui.js 拆分) -->
     <script type="module" src="js/ui/layout.js?v=20260607k"></script>
-    <script type="module" src="js/ui/navigation.js?v=20260607k"></script>
+    <script type="module" src="js/ui/navigation.js?v=20260719"></script>
     <script type="module" src="js/ui/dialogs.js?v=20260607k"></script>
     <!-- render 模組 (從 render.js 拆分) -->
-    <script type="module" src="js/render/sidebar.js?v=20260607k"></script>
+    <script type="module" src="js/render/sidebar.js?v=20260719"></script>
     <script type="module" src="js/render/sidebar-item.js?v=20260607k"></script>
-    <script type="module" src="js/render/tables.js?v=20260607k"></script>
+    <script type="module" src="js/render/tables.js?v=20260719"></script>
     <script type="module" src="js/render/account-ui.js?v=20260607k"></script>
     <!-- admin 模組 (從 admin.js 拆分) -->
     <script type="module" src="js/admin/modal-utils.js?v=20260607k"></script>
@@ -606,7 +613,7 @@
     <script type="module" src="js/admin/menu-manage.js?v=20260607k"></script>
     <script type="module" src="js/admin/activity-log.js?v=20260607k"></script>
     <script type="module" src="js/admin/misc-manage.js?v=20260607k"></script>
-    <script type="module" src="js/main.js?v=20260607k"></script>
+    <script type="module" src="js/main.js?v=20260719"></script>
 
 </body>
 </html>

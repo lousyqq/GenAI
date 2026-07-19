@@ -26,7 +26,7 @@ const i18n = {
         login_title: "EQ Dashboard", login_emp_id: "工號 (Emp ID)", login_pwd: "密碼 (Password)", login_btn: "登入",
         nav_sys: "系統", nav_personal: "自訂", nav_fab: "廠區:", nav_sys_settings: "系統設定", nav_logout: "登出系統", nav_login_count: "累積登入次數", nav_login_time: "本次登入時間", nav_feedback: "意見箱", nav_breadcrumb_home: "首頁總覽",
         sidebar_module: "模組目錄", search_placeholder: "搜尋看板…", search_no_result: "找不到符合的看板", search_clear: "清除搜尋",
-        empty_fab_title: "此廠區尚未配置看板", empty_fab_desc: "可於右上方切換至其他廠區，或由系統管理員於選單配置管理新增看板。",
+        empty_fab_title: "尚未配置看板", empty_fab_desc: "目前尚未有可瀏覽的看板內容。",
         home_desc: "目前為預設系統版面。請從上方或左側選單進入各項報表或設定。", home_role_title: "我的系統權限層級", home_role_admin: "系統管理員", home_role_user: "一般使用者",
         btn_restore_default: "還原預設版面", btn_expand_all: "全部展開", btn_add_webpage: "新增網頁", btn_add_main_menu: "新增主選單配置", btn_add_fab: "新增廠區", btn_add_role: "新增群組", btn_add_account: "新增帳號", btn_add_apply: "新增申請",
         config_import_title: "從 Excel 匯入", config_export_title: "匯出 Excel 備份", config_export_desc: "將目前資料庫內容匯出為 Excel，供離線備份", btn_import_excel: "匯入並覆蓋", btn_export_excel: "匯出 Excel",

@@ -117,7 +117,8 @@ public class AuthService : IAuthService
     {
         if (string.IsNullOrWhiteSpace(empId)) return null;
         var normalized = empId.Trim();
-        var account = await _context.Accounts.FirstOrDefaultAsync(a => a.EmpId.ToLower() == normalized.ToLower());
+        // 等值比對即可 — SQL Server CI 定序不分大小寫；用 .ToLower() 反而使 EmpId 索引失效。
+        var account = await _context.Accounts.FirstOrDefaultAsync(a => a.EmpId == normalized);
         if (account != null && !string.Equals(account.EmpId, "admin", StringComparison.OrdinalIgnoreCase))
         {
             if (string.IsNullOrWhiteSpace(account.Department) || string.Equals(account.Name, account.EmpId, StringComparison.OrdinalIgnoreCase))

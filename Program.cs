@@ -185,7 +185,9 @@ builder.Services
                     || string.Equals(empId, "admin", StringComparison.OrdinalIgnoreCase);
 
                 var db = context.HttpContext.RequestServices.GetRequiredService<AppDbContext>();
-                var account = await db.Accounts.AsNoTracking().FirstOrDefaultAsync(a => a.EmpId.ToLower() == empId.Trim().ToLower());
+                // 不可用 .ToLower() 比對 — 會轉成 SQL 的 LOWER(EmpId) 使索引失效（本事件每個請求都執行）。
+                // SQL Server 預設 CI 定序本身即不分大小寫，直接等值比對即可走索引 seek。
+                var account = await db.Accounts.AsNoTracking().FirstOrDefaultAsync(a => a.EmpId == empId.Trim());
                 if (account == null)
                 {
                     // 若是 TestAccounts / EmergencyAdmin (例如 admin)，因其僅存在記憶體或設定檔中，不在 DB Accounts 表，絕對不可 RejectPrincipal

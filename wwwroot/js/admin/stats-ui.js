@@ -1,9 +1,92 @@
 // === admin/stats-ui.js — 網站使用率與流量統計儀表板 ===
 // 對應頁面：#page-site-stats
-import { safeDestroyDataTable, initDataTable } from '../render/sidebar.js?v=20260607k';
+import { safeDestroyDataTable, initDataTable } from '../render/sidebar.js?v=20260719';
 
 let _currentStatsMode = 'daily'; // 'daily' 或 'monthly'
 let _statsInitialized = false;
+
+// === 圖表色彩（與 index.html 圖例、KPI 卡左框線一致）===
+//   頁面文案一律用白話「進站人數 / 瀏覽次數」，UV/PV 術語只留在程式內部欄位名。
+const STATS_COLOR_UV = '#10b981';
+const STATS_COLOR_PV = '#3b82f6';
+
+// === 自製圖表 tooltip（取代原生 title 屬性：即時顯示、不用停留等待，且樣式可讀）===
+let _statsChartTip = null;
+function getStatsChartTip() {
+    if (!_statsChartTip) {
+        _statsChartTip = document.createElement('div');
+        _statsChartTip.className = 'stats-chart-tip';
+        _statsChartTip.style.display = 'none';
+        document.body.appendChild(_statsChartTip);
+    }
+    return _statsChartTip;
+}
+
+function bindStatsChartTooltip(container) {
+    if (container.dataset.tipBound === '1') return; // 事件掛在 container 上，innerHTML 重繪不需重掛
+    container.dataset.tipBound = '1';
+    let hoverGroup = null;
+
+    container.addEventListener('mouseover', (e) => {
+        const g = e.target.closest('.stats-bar-group');
+        if (!g || g === hoverGroup) return;
+        if (hoverGroup) hoverGroup.classList.remove('stats-bar-hover');
+        hoverGroup = g;
+        g.classList.add('stats-bar-hover');
+        const tip = getStatsChartTip();
+        tip.innerHTML = `<div class="fw-bold mb-1">${window.escapeHTML(g.dataset.tipTitle || '')}</div>`
+            + `<div><span class="stats-legend-dot" style="background:${STATS_COLOR_UV};"></span>進站人數：${Number(g.dataset.uv || 0).toLocaleString()} 人</div>`
+            + `<div><span class="stats-legend-dot" style="background:${STATS_COLOR_PV};"></span>瀏覽次數：${Number(g.dataset.pv || 0).toLocaleString()} 次</div>`;
+        tip.style.display = 'block';
+    });
+
+    container.addEventListener('mousemove', (e) => {
+        const tip = getStatsChartTip();
+        if (tip.style.display === 'none') return;
+        // 跟隨滑鼠，靠近視窗右緣時翻到左側避免被裁切
+        const pad = 14;
+        let x = e.clientX + pad;
+        if (x + tip.offsetWidth > window.innerWidth - 8) x = e.clientX - tip.offsetWidth - pad;
+        tip.style.left = `${x}px`;
+        tip.style.top = `${Math.max(8, e.clientY - tip.offsetHeight - pad)}px`;
+    });
+
+    container.addEventListener('mouseleave', () => {
+        if (hoverGroup) { hoverGroup.classList.remove('stats-bar-hover'); hoverGroup = null; }
+        getStatsChartTip().style.display = 'none';
+    });
+}
+
+/**
+ * 共用 CSS 長條圖渲染（日報表 / 月報表共用）。
+ * items: [{ label: X 軸標籤, tipTitle: tooltip 標題, uv, pv }]
+ */
+function renderStatsBarChart(container, items, opts = {}) {
+    const barWidth = opts.barWidth || 10;
+    const minWidth = opts.groupMinWidth || 28;
+    const gapClass = opts.groupGapClass || 'gap-1';
+    const labelClass = opts.boldLabel ? 'small fw-bold text-secondary mt-1' : 'small text-secondary mt-1';
+
+    let max = 10;
+    items.forEach(t => { if (t.pv > max) max = t.pv; if (t.uv > max) max = t.uv; });
+
+    let html = '';
+    items.forEach(t => {
+        const uvHeight = Math.max(6, Math.round((t.uv / max) * 190));
+        const pvHeight = Math.max(6, Math.round((t.pv / max) * 190));
+        html += `
+            <div class="d-flex flex-column align-items-center flex-grow-1 stats-bar-group" style="min-width: ${minWidth}px;"
+                 data-tip-title="${window.escapeHTML(t.tipTitle)}" data-uv="${t.uv}" data-pv="${t.pv}">
+                <div class="d-flex align-items-end justify-content-center ${gapClass} w-100" style="height: 200px;">
+                    <div class="rounded-top shadow-sm transition-all" style="width: ${barWidth}px; height: ${uvHeight}px; background: linear-gradient(180deg, ${STATS_COLOR_UV} 0%, #059669 100%);"></div>
+                    <div class="rounded-top shadow-sm transition-all" style="width: ${barWidth}px; height: ${pvHeight}px; background: linear-gradient(180deg, ${STATS_COLOR_PV} 0%, #2563eb 100%);"></div>
+                </div>
+                <div class="${labelClass}" style="font-size: 0.75rem;">${window.escapeHTML(t.label)}</div>
+            </div>`;
+    });
+    container.innerHTML = html;
+    bindStatsChartTooltip(container);
+}
 
 export function initSiteStats() {
     if (!_statsInitialized) {
@@ -101,7 +184,7 @@ async function loadSummaryKPIs() {
         if (elMonthUv) elMonthUv.textContent = (data.thisMonth?.uv || 0).toLocaleString();
         if (elMonthPv) elMonthPv.textContent = (data.thisMonth?.pv || 0).toLocaleString();
         if (elMonthAvg) elMonthAvg.textContent = `${data.thisMonth?.avgViewsPerUser || 0}`;
-        if (elMonthLabel) elMonthLabel.textContent = `統計月份: ${data.thisMonth?.yearMonth || '本月'} (累計歷史進站人次: ${(data.total?.pv || 0).toLocaleString()})`;
+        if (elMonthLabel) elMonthLabel.textContent = `統計月份: ${data.thisMonth?.yearMonth || '本月'}（開站以來累計瀏覽 ${(data.total?.pv || 0).toLocaleString()} 次）`;
 
         // 部門占比 TOP 5
         const deptContainer = document.getElementById('statsDeptContainer');
@@ -145,10 +228,10 @@ async function loadDailyBreakdown(year, month) {
 
     safeDestroyDataTable('dtStatsDetail');
 
-    if (titleEl) titleEl.innerHTML = `<i class="fas fa-chart-bar text-primary me-2"></i>${year} 年 ${month} 月 — 每日使用人數與瀏覽走勢`;
+    if (titleEl) titleEl.innerHTML = `<i class="fas fa-chart-bar text-primary me-2"></i>${year} 年 ${month} 月 — 每日進站人數與瀏覽次數走勢`;
     if (tableTitleEl) tableTitleEl.innerHTML = `<i class="fas fa-list text-secondary me-2"></i>${year} 年 ${month} 月 — 進站同仁詳細紀錄`;
     if (tableHeader) {
-        tableHeader.innerHTML = '<th>日期</th><th>工號</th><th>姓名</th><th>所屬部門</th><th>當日瀏覽(PV)</th><th>首次進入</th><th>最後進入</th>';
+        tableHeader.innerHTML = '<th>日期</th><th>工號</th><th>姓名</th><th>所屬部門</th><th>當日瀏覽次數</th><th>首次進入</th><th>最後進入</th>';
     }
 
     if (chartContainer) chartContainer.innerHTML = '<div class="text-center text-muted w-100 py-5"><i class="fas fa-spinner fa-spin me-1"></i> 載入每日走勢中...</div>';
@@ -160,30 +243,18 @@ async function loadDailyBreakdown(year, month) {
         const data = await resp.json();
         if (!data || !data.success) return;
 
-        // 繪製每日趨勢 CSS Bar Chart
+        // 繪製每日趨勢 CSS Bar Chart（共用渲染器 + 自製 tooltip）
         if (chartContainer) {
             const trend = data.trend || [];
             if (trend.length === 0) {
                 chartContainer.innerHTML = '<div class="text-center text-muted w-100 py-5">該月尚無瀏覽流量紀錄</div>';
             } else {
-                let maxPv = 10;
-                trend.forEach(t => { if (t.pv > maxPv) maxPv = t.pv; if (t.uv > maxPv) maxPv = t.uv; });
-
-                let chartHtml = '';
-                trend.forEach(t => {
-                    const uvHeight = Math.max(6, Math.round((t.uv / maxPv) * 190));
-                    const pvHeight = Math.max(6, Math.round((t.pv / maxPv) * 190));
-                    const dayLabel = t.date.split('-')[2] + '日';
-                    chartHtml += `
-                        <div class="d-flex flex-column align-items-center flex-grow-1" style="min-width: 28px;" title="日期: ${t.date}&#10;不重複人數(UV): ${t.uv} 人&#10;總瀏覽量(PV): ${t.pv} 次">
-                            <div class="d-flex align-items-end justify-content-center gap-1 w-100" style="height: 200px;">
-                                <div class="rounded-top shadow-sm transition-all" style="width: 10px; height: ${uvHeight}px; background: linear-gradient(180deg, #10b981 0%, #059669 100%);"></div>
-                                <div class="rounded-top shadow-sm transition-all" style="width: 10px; height: ${pvHeight}px; background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);"></div>
-                            </div>
-                            <div class="small text-secondary mt-1" style="font-size: 0.75rem;">${dayLabel}</div>
-                        </div>`;
-                });
-                chartContainer.innerHTML = chartHtml;
+                renderStatsBarChart(chartContainer, trend.map(t => ({
+                    label: t.date.split('-')[2] + '日',
+                    tipTitle: t.date,
+                    uv: t.uv,
+                    pv: t.pv
+                })), { barWidth: 10, groupMinWidth: 28, groupGapClass: 'gap-1', boldLabel: false });
             }
         }
 
@@ -204,7 +275,7 @@ async function loadDailyBreakdown(year, month) {
                         <td class="small text-muted">${item.firstVisit}</td>
                         <td class="small text-muted">${item.lastVisit}</td>
                     </tr>`).join('');
-                initDataTable('dtStatsDetail', true);
+                initDataTable('dtStatsDetail', true, 25);
             }
         }
     } catch (e) {
@@ -224,10 +295,10 @@ async function loadMonthlyBreakdown(year) {
 
     safeDestroyDataTable('dtStatsDetail');
 
-    if (titleEl) titleEl.innerHTML = `<i class="fas fa-chart-bar text-primary me-2"></i>${year} 年度 — 各月份進站人數與瀏覽量走勢`;
+    if (titleEl) titleEl.innerHTML = `<i class="fas fa-chart-bar text-primary me-2"></i>${year} 年度 — 各月份進站人數與瀏覽次數走勢`;
     if (tableTitleEl) tableTitleEl.innerHTML = `<i class="fas fa-list text-secondary me-2"></i>${year} 年度 — 各月份彙總清單`;
     if (tableHeader) {
-        tableHeader.innerHTML = '<th>月份</th><th>實際不重複使用人數 (月度 UV)</th><th>總累積瀏覽量 (月度 PV)</th><th>人均黏著度 (PV/UV)</th><th>流量強度評估</th>';
+        tableHeader.innerHTML = '<th>月份</th><th>進站人數 (當月不重複)</th><th>瀏覽次數 (當月累計)</th><th>平均每人瀏覽</th><th>活躍度</th>';
     }
 
     if (chartContainer) chartContainer.innerHTML = '<div class="text-center text-muted w-100 py-5"><i class="fas fa-spinner fa-spin me-1"></i> 載入月度走勢中...</div>';
@@ -239,31 +310,18 @@ async function loadMonthlyBreakdown(year) {
         const data = await resp.json();
         if (!data || !data.success) return;
 
-        // 繪製月度趨勢 CSS Bar Chart
+        // 繪製月度趨勢 CSS Bar Chart（共用渲染器 + 自製 tooltip；固定顯示 1~12 月）
         if (chartContainer) {
             const monthly = data.monthly || [];
             if (monthly.length === 0) {
                 chartContainer.innerHTML = '<div class="text-center text-muted w-100 py-5">年度尚無瀏覽紀錄</div>';
             } else {
-                let maxPv = 10;
-                monthly.forEach(m => { if (m.pv > maxPv) maxPv = m.pv; if (m.uv > maxPv) maxPv = m.uv; });
-
-                let chartHtml = '';
-                // 固定顯示 1~12 月
+                const items = [];
                 for (let m = 1; m <= 12; m++) {
                     const item = monthly.find(x => x.month === m) || { uv: 0, pv: 0 };
-                    const uvHeight = Math.max(6, Math.round((item.uv / maxPv) * 190));
-                    const pvHeight = Math.max(6, Math.round((item.pv / maxPv) * 190));
-                    chartHtml += `
-                        <div class="d-flex flex-column align-items-center flex-grow-1" style="min-width: 40px;" title="${year}年${m}月&#10;不重複人數(UV): ${item.uv} 人&#10;總瀏覽量(PV): ${item.pv} 次">
-                            <div class="d-flex align-items-end justify-content-center gap-2 w-100" style="height: 200px;">
-                                <div class="rounded-top shadow-sm transition-all" style="width: 14px; height: ${uvHeight}px; background: linear-gradient(180deg, #10b981 0%, #059669 100%);"></div>
-                                <div class="rounded-top shadow-sm transition-all" style="width: 14px; height: ${pvHeight}px; background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);"></div>
-                            </div>
-                            <div class="small fw-bold text-secondary mt-1">${m}月</div>
-                        </div>`;
+                    items.push({ label: `${m}月`, tipTitle: `${year} 年 ${m} 月`, uv: item.uv, pv: item.pv });
                 }
-                chartContainer.innerHTML = chartHtml;
+                renderStatsBarChart(chartContainer, items, { barWidth: 14, groupMinWidth: 40, groupGapClass: 'gap-2', boldLabel: true });
             }
         }
 
@@ -290,7 +348,7 @@ async function loadMonthlyBreakdown(year) {
                             <td><span class="badge ${badgeColor}">${label}</span></td>
                         </tr>`;
                 }).join('');
-                initDataTable('dtStatsDetail', true);
+                initDataTable('dtStatsDetail', true, 25);
             }
         }
     } catch (e) {

@@ -1,15 +1,15 @@
 // === admin/misc-manage.js - AppGrid + 需求申請 + 審核 + Excel 匯出 + 圖示工具 ===
 
-import { getAppItems, getCustomMenus, getFabs, getPersonalSettings, getRoles, savePersonalSettings } from '../config.js?v=20260607k';
+import { getAppItems, getCustomMenus, getFabs, getPersonalSettings, getRoles, savePersonalSettings } from '../config.js?v=20260719';
 
 
 import { hideModalSafely, showModalSafely } from './modal-utils.js?v=20260607k';
 import { batchSaveMenusAPI, deleteAppAPI, fetchInitialDataFromDB, saveAppAPI, syncDataToDB } from '../api.js?v=20260607k';
-import { initDashboardUI } from '../main.js?v=20260607k';
-import { renderSidebarMenus } from '../render/sidebar.js?v=20260607k';
-import { renderAppGrid, renderMenuConfigTable, renderPersonalMenuManage, renderWebpageTable } from '../render/tables.js?v=20260607k';
+import { initDashboardUI } from '../main.js?v=20260719';
+import { renderSidebarMenus } from '../render/sidebar.js?v=20260719';
+import { renderAppGrid, renderMenuConfigTable, renderPersonalMenuManage, renderWebpageTable } from '../render/tables.js?v=20260719';
 import { customAlert, customConfirm, updateSyncButtonUI } from '../ui/dialogs.js?v=20260607k';
-import { navTo } from '../ui/navigation.js?v=20260607k';
+import { navTo } from '../ui/navigation.js?v=20260719';
 import { appState } from '../store.js?v=20260607k';
 
 

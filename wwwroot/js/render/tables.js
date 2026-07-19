@@ -1,6 +1,6 @@
 // === render/tables.js - 管理表格渲染 (Fab, Role, Account, Webpage, MenuConfig, Apply, Audit, AppGrid) ===
 
-import { getCustomMenus, getDataTableLang, getFabs, getPersonalSettings, getRoles, savePersonalSettings, t } from '../config.js?v=20260607k';
+import { getCustomMenus, getDataTableLang, getFabs, getPersonalSettings, getRoles, savePersonalSettings, t } from '../config.js?v=20260719';
 
 
 import { deleteAccount, editAccount } from '../admin/account-manage.js?v=20260607k';
@@ -8,9 +8,9 @@ import { deleteFab, editFab } from '../admin/fab-manage.js?v=20260607k';
 import { deleteMenuNodeItem, deleteWebpageItem, editPersonalMenu, openAddMenuNodeModal, openAddWebpageModal } from '../admin/menu-manage.js?v=20260607k';
 import { handleDragLeave, handleDragOver, handleDragStart, handleDrop } from '../admin/misc-manage.js?v=20260607k';
 import { deleteRole, editRole } from '../admin/role-manage.js?v=20260607k';
-import { getDtPageLen, initDataTable, rememberDtPageLen, renderSidebarMenus, safeDestroyDataTable } from './sidebar.js?v=20260607k';
+import { getDtPageLen, initDataTable, rememberDtPageLen, renderSidebarMenus, safeDestroyDataTable } from './sidebar.js?v=20260719';
 import { generateIconHtml } from '../ui/dialogs.js?v=20260607k';
-import { getFullMenuPathStr } from '../ui/navigation.js?v=20260607k';
+import { getFullMenuPathStr } from '../ui/navigation.js?v=20260719';
 import { appState } from '../store.js?v=20260607k';
 
 
@@ -568,6 +568,28 @@ export function renderWebpageTable() {
 export function renderMenuConfigTable() {
     safeDestroyDataTable('dtMenuConfig'); const tbody = document.getElementById('menuConfigTableBody'); if (!tbody) return; tbody.innerHTML = '';
     const menus = getCustomMenus();
+
+    // 委派管理員範圍提示：讓委派者清楚知道 (1) 此表只列出他可管理的項目、(2) 新增的項目由自己維護，
+    //   避免誤以為「怎麼只看得到這幾筆」或「新增的東西是全站主選單」。admin 不顯示。
+    const scopeHint = document.getElementById('menuManageScopeHint');
+    if (scopeHint) {
+        const u = window.appState ? window.appState.currentUser : null;
+        const isAdminUser = u && String(u.roleLevel || '').toLowerCase() === 'admin';
+        const manageIds = (u && u.manageableMenus) || [];
+        if (!isAdminUser && manageIds.length > 0) {
+            const badges = manageIds.map(id => {
+                const m = menus.find(x => window.cleanId(x.id) === window.cleanId(id));
+                const name = m ? (m.displayName || m.name || id) : id;
+                return `<span class="badge bg-white text-dark border me-1">${window.escapeHTML(name)}</span>`;
+            }).join('');
+            scopeHint.style.display = '';
+            scopeHint.innerHTML = `<i class="fas fa-user-shield me-1 text-warning"></i>`
+                + `您以<b>委派身分</b>管理下列目錄：${badges}— 此處僅顯示您可管理的項目；`
+                + `「新增主選單配置」建立的項目將以您為建立者，由您自行維護。`;
+        } else {
+            scopeHint.style.display = 'none';
+        }
+    }
     let roots = menus.filter(m => {
         if (String(m.isPoolItem || m.IsPoolItem).toLowerCase() === 'true') return false;
         let hasValidParent = menus.some(pNode => pNode.id !== m.id && (window.isParentMatch(m.parentId || m.ParentMenuId, pNode) || (m.parentIds || []).some(pid => window.isParentMatch(pid, pNode))));

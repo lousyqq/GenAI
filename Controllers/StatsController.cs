@@ -30,14 +30,12 @@ public class StatsController : ControllerBase
     {
         try
         {
-            // 取得登入工號，優先取 Token Claim，若無則檢查 Request Body，再無則記為 'ANONYMOUS'
-            string empId = User.FindFirstValue(ClaimTypes.NameIdentifier)
-                           ?? User.FindFirst("empId")?.Value
-                           ?? req?.EmpId
-                           ?? "ANONYMOUS";
-
-            if (string.IsNullOrWhiteSpace(empId)) empId = "ANONYMOUS";
-            empId = empId.Trim();
+            // 工號**只信 Cookie Claim**，絕不採用 Request Body 的 EmpId —
+            //   否則匿名請求可偽冒任意工號灌 PV、污染統計。未認證一律記 'ANONYMOUS'。
+            string? claimEmpId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                                 ?? User.FindFirst("empId")?.Value;
+            bool isAuthenticated = !string.IsNullOrWhiteSpace(claimEmpId);
+            string empId = isAuthenticated ? claimEmpId!.Trim() : "ANONYMOUS";
 
             // 以台灣工廠時間 UTC+8 作為「當日統計基準日」
             var today = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(8));
@@ -53,11 +51,12 @@ public class StatsController : ControllerBase
             }
             else
             {
-                // 若當天初次到訪，試圖從 Accounts 查詢姓名與部門快照
-                string? empName = req?.EmpName ?? User.FindFirstValue(ClaimTypes.Name);
-                string? dept = req?.Department;
+                // 若當天初次到訪，試圖從 Accounts 查詢姓名與部門快照。
+                // Body 的 EmpName/Department 僅在已認證時採用（只會寫進自己當日那筆），匿名請求整包忽略。
+                string? empName = isAuthenticated ? (req?.EmpName ?? User.FindFirstValue(ClaimTypes.Name)) : null;
+                string? dept = isAuthenticated ? req?.Department : null;
 
-                if (empId != "ANONYMOUS" && (string.IsNullOrEmpty(empName) || string.IsNullOrEmpty(dept)))
+                if (isAuthenticated && (string.IsNullOrEmpty(empName) || string.IsNullOrEmpty(dept)))
                 {
                     var acc = await _dbContext.Accounts
                         .AsNoTracking()
@@ -96,7 +95,8 @@ public class StatsController : ControllerBase
             try
             {
                 var today = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(8));
-                var empId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? req?.EmpId ?? "ANONYMOUS";
+                var empId = (User.FindFirstValue(ClaimTypes.NameIdentifier)
+                             ?? User.FindFirst("empId")?.Value)?.Trim() ?? "ANONYMOUS";
                 var existing = await _dbContext.SiteVisitorDailyStats.FindAsync(today, empId);
                 if (existing != null)
                 {
@@ -122,6 +122,9 @@ public class StatsController : ControllerBase
     /// <summary>
     /// 取得頂層 KPI 概況卡片資料（今日、本月、歷史總計）
     /// </summary>
+    /// 統計儀表板僅 admin 可見（sidebar.js 以 role === 'admin' 顯示入口），API 端必須同步鎖 admin，
+    /// 否則任何人可匿名直接呼叫取得全體同仁進站明細。
+    [Authorize(Roles = "admin")]
     [HttpGet("Summary")]
     public async Task<IActionResult> GetSummary()
     {
@@ -181,6 +184,7 @@ public class StatsController : ControllerBase
     /// <summary>
     /// 查詢指定月份內「按日 (Daily)」走勢與細節清單
     /// </summary>
+    [Authorize(Roles = "admin")]
     [HttpGet("Daily")]
     public async Task<IActionResult> GetDailyStats([FromQuery] int year = 0, [FromQuery] int month = 0)
     {
@@ -214,13 +218,14 @@ public class StatsController : ControllerBase
                 pv = t.pv
             }).ToList();
 
-            // 當月詳細進站人次前 50 筆列表
+            // 當月詳細進站人次「全量」列表 — 前端 dtStatsDetail (DataTables) 做純前端分頁與搜尋，
+            //   後端不可截斷（曾 Take(50) 導致第 51 筆之後看不到）。
+            //   若日後單月紀錄超過約一萬筆造成傳輸/渲染變慢，再評估改 server-side paged 查詢。
             var details = await _dbContext.SiteVisitorDailyStats
                 .AsNoTracking()
                 .Where(s => s.StatDate >= firstDay && s.StatDate <= lastDay)
                 .OrderByDescending(s => s.StatDate)
                 .ThenByDescending(s => s.PageViews)
-                .Take(50)
                 .Select(s => new
                 {
                     statDate = s.StatDate.ToString("yyyy-MM-dd"),
@@ -252,6 +257,7 @@ public class StatsController : ControllerBase
     /// <summary>
     /// 查詢指定年度內「按月份 (Monthly)」走勢清單
     /// </summary>
+    [Authorize(Roles = "admin")]
     [HttpGet("Monthly")]
     public async Task<IActionResult> GetMonthlyStats([FromQuery] int year = 0)
     {
@@ -263,19 +269,23 @@ public class StatsController : ControllerBase
             var firstDay = new DateOnly(year, 1, 1);
             var lastDay = new DateOnly(year, 12, 31);
 
-            var rawStats = await _dbContext.SiteVisitorDailyStats
+            // 先在 SQL 端以 (月份, 工號) 分組加總，只拉回縮減後的彙總列（月數 × 人數），
+            //   不再把整年原始明細全部載入記憶體。UV (distinct 工號數) 於客端由已分組結果計數。
+            var monthlyAgg = await _dbContext.SiteVisitorDailyStats
                 .AsNoTracking()
                 .Where(s => s.StatDate >= firstDay && s.StatDate <= lastDay)
+                .GroupBy(s => new { s.StatDate.Month, s.EmpId })
+                .Select(g => new { g.Key.Month, g.Key.EmpId, Pv = g.Sum(x => x.PageViews) })
                 .ToListAsync();
 
-            var monthly = rawStats
-                .GroupBy(s => s.StatDate.Month)
+            var monthly = monthlyAgg
+                .GroupBy(x => x.Month)
                 .Select(g => new
                 {
                     month = g.Key,
                     monthLabel = $"{year} 年 {g.Key:D2} 月",
-                    uv = g.Select(x => x.EmpId).Distinct().Count(),
-                    pv = g.Sum(x => x.PageViews)
+                    uv = g.Count(),
+                    pv = g.Sum(x => x.Pv)
                 })
                 .OrderBy(x => x.month)
                 .ToList();
@@ -297,6 +307,7 @@ public class StatsController : ControllerBase
     /// <summary>
     /// 匯出該月統計 CSV 報表
     /// </summary>
+    [Authorize(Roles = "admin")]
     [HttpGet("Export")]
     public async Task<IActionResult> ExportStats([FromQuery] int year = 0, [FromQuery] int month = 0)
     {
@@ -317,11 +328,11 @@ public class StatsController : ControllerBase
                 .ToListAsync();
 
             var sb = new StringBuilder();
-            sb.AppendLine("統計日期,員工工號,員工姓名,所屬部門,當日瀏覽次數(PV),首次進入時間,最後進入時間");
+            sb.AppendLine("統計日期,員工工號,員工姓名,所屬部門,當日瀏覽次數,首次進入時間,最後進入時間");
 
             foreach (var item in list)
             {
-                sb.AppendLine($"{item.StatDate:yyyy-MM-dd},\"{item.EmpId}\",\"{item.EmpName ?? item.EmpId}\",\"{item.Department ?? "未分類"}\",{item.PageViews},{item.FirstVisitTime:yyyy-MM-dd HH:mm:ss},{item.LastVisitTime:yyyy-MM-dd HH:mm:ss}");
+                sb.AppendLine($"{item.StatDate:yyyy-MM-dd},{CsvField(item.EmpId)},{CsvField(item.EmpName ?? item.EmpId)},{CsvField(item.Department ?? "未分類")},{item.PageViews},{item.FirstVisitTime:yyyy-MM-dd HH:mm:ss},{item.LastVisitTime:yyyy-MM-dd HH:mm:ss}");
             }
 
             var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
@@ -333,10 +344,25 @@ public class StatsController : ControllerBase
             return StatusCode(500, new { success = false, message = "匯出失敗：" + ex.Message });
         }
     }
+
+    /// <summary>
+    /// CSV 欄位安全編碼：雙引號跳脫 (RFC 4180)，並在開頭為 = + - @ 時前置單引號，
+    /// 防止 Excel 將儲存格內容當公式執行 (CSV Formula Injection)。
+    /// </summary>
+    private static string CsvField(string? value)
+    {
+        var v = value ?? "";
+        if (v.Length > 0 && (v[0] == '=' || v[0] == '+' || v[0] == '-' || v[0] == '@'))
+        {
+            v = "'" + v;
+        }
+        return "\"" + v.Replace("\"", "\"\"") + "\"";
+    }
 }
 
 public class PingRequest
 {
+    /// <summary>前端仍會送出此欄位，但後端一律忽略 — 身分只認 Cookie Claim，防偽冒。</summary>
     public string? EmpId { get; set; }
     public string? EmpName { get; set; }
     public string? Department { get; set; }

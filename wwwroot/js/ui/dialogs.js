@@ -1,5 +1,5 @@
 import { enforceSystemModeUI } from './layout.js?v=20260607k';
-import { changeLanguage, renderLangSwitcher } from './navigation.js?v=20260607k';
+import { changeLanguage, renderLangSwitcher } from './navigation.js?v=20260719';
 import { appState } from '../store.js?v=20260607k';
 
 

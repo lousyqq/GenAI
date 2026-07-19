@@ -790,3 +790,40 @@ body.iframe-mode #page-iframe iframe {
     background-color: #f8fafc;
     box-shadow: inset 0 -1px 0 #cbd5e1; /* 繪製底部邊框避免捲動時邊框消失 */
 }
+
+/* === 使用率統計：圖例圓點 + 圖表自製 tooltip（stats-ui.js） === */
+.stats-legend-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    margin-right: 5px;
+    flex-shrink: 0;
+}
+
+/* 跟隨滑鼠的圖表提示框：掛在 body 下、fixed 定位，不會被圖表容器的 overflow 裁切 */
+.stats-chart-tip {
+    position: fixed;
+    z-index: 3000;
+    background: rgba(15, 23, 42, 0.92);
+    color: #fff;
+    font-size: 0.8rem;
+    line-height: 1.55;
+    padding: 8px 12px;
+    border-radius: 8px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+    pointer-events: none;
+    white-space: nowrap;
+}
+.stats-chart-tip .stats-legend-dot {
+    margin-right: 6px;
+}
+
+/* 滑過的長條群組給淡色底，明確標示目前對應的日期/月份 */
+.stats-bar-group {
+    border-radius: 6px;
+    transition: background-color 0.15s ease;
+}
+.stats-bar-group.stats-bar-hover {
+    background-color: rgba(59, 130, 246, 0.08);
+}

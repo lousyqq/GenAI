@@ -1,11 +1,11 @@
 // === render/account-ui.js - 帳號 Modal 內部 UI 渲染 ===
 
-import { getCustomMenus, getFabs, getRoles } from '../config.js?v=20260607k';
+import { getCustomMenus, getFabs, getRoles } from '../config.js?v=20260719';
 
 
 import { clearDefaultMenu, pickDefaultMenu } from '../admin/account-manage.js?v=20260607k';
 import { generateIconHtml } from '../ui/dialogs.js?v=20260607k';
-import { getFullMenuPathStr } from '../ui/navigation.js?v=20260607k';
+import { getFullMenuPathStr } from '../ui/navigation.js?v=20260719';
 import { appState } from '../store.js?v=20260607k';
 
 

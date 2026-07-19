@@ -1,13 +1,13 @@
 import { appState } from './store.js?v=20260607k';
-import './config.js?v=20260607h';
+import './config.js?v=20260719';
 import './api.js?v=20260607h';
 import './auth.js?v=20260607h';
 import './ui/layout.js?v=20260607h';
-import './ui/navigation.js?v=20260607h';
+import './ui/navigation.js?v=20260719';
 import './ui/dialogs.js?v=20260607h';
-import './render/sidebar.js?v=20260607h';
+import './render/sidebar.js?v=20260719';
 import './render/sidebar-item.js?v=20260607h';
-import './render/tables.js?v=20260607h';
+import './render/tables.js?v=20260719';
 import './render/account-ui.js?v=20260607h';
 import './admin/modal-utils.js?v=20260607h';
 import './admin/fab-manage.js?v=20260607h';
@@ -16,7 +16,7 @@ import './admin/account-manage.js?v=20260607h';
 import './admin/menu-manage.js?v=20260607h';
 import './admin/misc-manage.js?v=20260607h';
 import './admin/activity-log.js?v=20260607h';
-import './admin/stats-ui.js?v=20260718';
+import './admin/stats-ui.js?v=20260719';
 
 export function initModalSafely(id) { const el = document.getElementById(id); return el ? new bootstrap.Modal(el) : null; }
 
@@ -235,7 +235,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     try {
         let isDbLoaded = false;
         if (typeof fetchInitialDataFromDB === 'function') {
-            isDbLoaded = await fetchInitialDataFromDB();
+            // 冷啟動（尚無有效 cookie）時 GetInitialData 必然 401 → console 留下失敗噪音 + 一次無效重查詢。
+            //   先用輕量 MyProfile 探測登入態：有效才抓 InitialData；無效直接走下方 tryAutoLogin，
+            //   登入完成後 completeLoginAfterAuth 會自行補抓 InitialData（auth.js 已有該邏輯）。
+            const authProbe = await fetch(window.toAppUrl ? window.toAppUrl('/api/Auth/MyProfile') : '/api/Auth/MyProfile', { cache: 'no-store' }).catch(() => null);
+            if (authProbe && authProbe.ok) {
+                isDbLoaded = await fetchInitialDataFromDB();
+            }
         }
 
         loadingOverlay.remove();
