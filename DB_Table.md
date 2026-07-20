@@ -8,7 +8,7 @@
 
 ## 完整建置 SQL（遠端主機重建用）
 
-> 以下腳本 = **目前開發環境 GenAI DB 的完整定義**（18 張表、21 個 FK、17 個非叢集索引、基礎種子資料），已於 2026-07-14 在同 server 以臨時 DB 實測：一次跑通、與現行 GenAI 結構比對零差異。
+> 以下腳本 = **目前開發環境 GenAI DB 的完整定義**（19 張表、21 個 FK、18 個非叢集索引、基礎種子資料）。初版（18 張表）已於 2026-07-14 在同 server 以臨時 DB 實測一次跑通、零差異；2026-07-18 增補 `SiteVisitorDailyStats` 後同步更新本節與「5. 架構變更歷程」。
 > 使用方式：在遠端主機先 `CREATE DATABASE GenAI;`，再以 `sqlcmd -d GenAI -f 65001 -i 本腳本.sql` 執行（腳本冪等，可重複執行）。
 > ⚠️ **維護規則：日後專案修改若涉及 DB 架構變更，必須同步更新本節 SQL（新表 → 加 CREATE TABLE；欄位/索引調整 → 於腳本尾端「5. 架構變更歷程」加對應 ALTER/CREATE 指令）。**
 
@@ -323,6 +323,9 @@ IF OBJECT_ID('dbo.SiteVisitorDailyStats') IS NOT NULL
 BEGIN
     CREATE NONCLUSTERED INDEX [IX_SiteVisitorDailyStats_EmpId] ON dbo.SiteVisitorDailyStats (EmpId);
 END
+
+-- [2026-07-19] 無 schema 變更。本日僅應用層修改（Stats API 補 admin 授權與 Ping 防偽冒、
+--              EmpId 查詢改等值比對以走索引、前端統計頁 UI 優化），資料表/索引結構維持 19 張表現狀。
 ```
 
 ## 資料表一覽（19 張）

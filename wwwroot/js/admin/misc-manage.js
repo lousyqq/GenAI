@@ -273,8 +273,15 @@ export function openAppGridModal(id = null) {
     try {
         document.getElementById('appForm').reset();
         document.getElementById('appIdInput').value = id || '';
-        document.getElementById('appIconPreview').style.display = 'none';
-        document.getElementById('appIconPreview').src = '';
+        
+        // 重設預覽與當前圖示狀態框
+        if (document.getElementById('appIconPreviewBox')) document.getElementById('appIconPreviewBox').style.setProperty('display', 'none', 'important');
+        if (document.getElementById('appIconPreview')) {
+            document.getElementById('appIconPreview').style.display = 'none';
+            document.getElementById('appIconPreview').src = '';
+        }
+        if (document.getElementById('appCurrentIconBox')) document.getElementById('appCurrentIconBox').style.setProperty('display', 'none', 'important');
+        if (document.getElementById('appIconFile')) document.getElementById('appIconFile').value = '';
 
         if (id) {
             const app = getAppItems().find(a => window.cleanId(a.id) === window.cleanId(id));
@@ -282,9 +289,12 @@ export function openAppGridModal(id = null) {
                 document.getElementById('appName').value = app.name;
                 document.getElementById('appUrl').value = app.url;
                 document.getElementById('appTarget').value = app.target || '_blank';
-                if (app.iconBase64) {
-                    document.getElementById('appIconPreview').style.display = 'block';
-                    document.getElementById('appIconPreview').src = app.iconBase64;
+                
+                // 編輯既存 APP 且該 App 擁有圖示時：展示「當前配置狀態框」供視覺安心確認，避免 File Input 為空造成的疑惑
+                if (app.iconBase64 && document.getElementById('appCurrentIconBox') && document.getElementById('appCurrentIconImg')) {
+                    document.getElementById('appCurrentIconImg').src = app.iconBase64;
+                    document.getElementById('appCurrentIconBox').style.removeProperty('display');
+                    document.getElementById('appCurrentIconBox').style.display = 'flex';
                 }
             }
         }
@@ -302,8 +312,11 @@ export async function saveAppItem(e) {
         const name = document.getElementById('appName').value.trim();
         const url = document.getElementById('appUrl').value.trim();
         const target = document.getElementById('appTarget').value;
-        const iconSrc = document.getElementById('appIconPreview').src;
-        const finalIcon = document.getElementById('appIconPreview').style.display === 'block' ? iconSrc : '';
+        
+        const previewImg = document.getElementById('appIconPreview');
+        const previewBox = document.getElementById('appIconPreviewBox');
+        const hasNewIconPreview = previewImg && previewImg.src && (previewImg.style.display === 'block' || (previewBox && previewBox.style.display !== 'none'));
+        const newIconSrc = hasNewIconPreview ? previewImg.src : '';
 
         let apps = getAppItems();
         let appData;
@@ -315,7 +328,9 @@ export async function saveAppItem(e) {
                 apps[idx].name = name; apps[idx].appName = name; apps[idx].AppName = name;
                 apps[idx].url = url; apps[idx].Url = url;
                 apps[idx].target = target; apps[idx].Target = target;
-                apps[idx].iconBase64 = finalIcon; apps[idx].IconBase64 = finalIcon; 
+                if (hasNewIconPreview) {
+                    apps[idx].iconBase64 = newIconSrc; apps[idx].IconBase64 = newIconSrc; 
+                }
                 appData = apps[idx];
             }
         } else {
@@ -326,7 +341,7 @@ export async function saveAppItem(e) {
                 name: name, appName: name, AppName: name,
                 url: url, Url: url,
                 target: target, Target: target,
-                iconBase64: finalIcon, IconBase64: finalIcon 
+                iconBase64: newIconSrc, IconBase64: newIconSrc 
             };
             apps.push(appData);
         }
@@ -372,17 +387,23 @@ export function deleteAppItem(id) {
 
 export function handleAppIconUpload(e) {
     const file = e.target.files[0];
+    const previewBox = document.getElementById('appIconPreviewBox');
+    const previewImg = document.getElementById('appIconPreview');
     if (file) {
         compressImageFile(file, function (base64Str) {
             if (base64Str.length > 190000) {
                 customAlert("圖檔過於龐大或複雜，壓縮後仍超過資料庫與快取安全大小 (190KB)，請更換較簡單的圖標或選用較小尺寸。");
-                document.getElementById('appIconPreview').style.display = 'none';
+                if (previewBox) previewBox.style.setProperty('display', 'none', 'important');
+                if (previewImg) { previewImg.style.display = 'none'; previewImg.src = ''; }
                 e.target.value = '';
             } else {
-                document.getElementById('appIconPreview').src = base64Str;
-                document.getElementById('appIconPreview').style.display = 'block';
+                if (previewImg) { previewImg.src = base64Str; previewImg.style.display = 'block'; }
+                if (previewBox) { previewBox.style.removeProperty('display'); previewBox.style.display = 'flex'; }
             }
         });
+    } else {
+        if (previewBox) previewBox.style.setProperty('display', 'none', 'important');
+        if (previewImg) { previewImg.style.display = 'none'; previewImg.src = ''; }
     }
 }
 

@@ -2,77 +2,49 @@
 
 ASP.NET Core (.NET 9.0) 網頁專案。為 12A 專用的 GenAI 整合入口與部門應用目錄展示平台。
 
+## 核心文件地圖（四份，職責不重疊）
+| 文件 | 職責 |
+|---|---|
+| `CLAUDE.md`（本檔） | 開發規範、系統概況、目前待辦 — **開發行為的權威來源** |
+| `memory.md` | 供模型快速載入的最精簡專案狀態快照 |
+| `DB_Table.md` | DB Schema **唯一權威來源**；變更歷程只增不刪（遠端靠它增量升級） |
+| `系統架構.md` | 模組清單與資料流向 |
+
 ## 當前專案架構與系統概況
-- **免登入與 Windows 自動驗證**：進站以 Windows Negotiate 自動驗證 (`/api/Auth/WhoAmI`)，自動剝除網域前綴 (`UMC\`) 並直接登入；遇到 401 自動重新驗證。若為本機除錯可於 `appsettings.Development.json` 透過 `Auth:SimulatedWindowsAccount` 模擬不同桌機帳號登入。
-- **自動開戶與人事資料連動**：`Auth:AutoProvisionWindowsAccounts=true`。當 Windows 登入帳號不在 `Accounts` 表時，自動建立 user 帳號並預設指派 `role_1`。建立或載入帳號 (`FindAccountAsync` / `LookupPerson`) 時，會自動至 `[WEB].[dbo].[notes_person]` 比對 `EMPNO` 寫入姓名與部門。
-- **Cookie 權限即時雙向同步**：`Program.cs` 註冊 `OnValidatePrincipal`，每次請求自動檢查 DB (`Accounts`) 與設定 (`AccountOverrides`)，及時刷新與驗證 Cookie 權限。
-- **單一 12A 版面與主選單架構**：專案固定為單一系統版面 (`12A` / `fab_12a` / `role_1`)，已移除 UI 廠區/語言切換（固定繁中）。預設已建 16 個主選單目錄（`m_df1`~`m_tf6`），開放全體使用者瀏覽全系統主選單與看板 (`GetVisibleMenuIdsAsync`)。
-- **純瀏覽者與委派管理機制**：
-  - **純瀏覽者**：`window.isPureViewer()` = 非 admin 且無委派權限。可觀看所有選單與看板，但隱藏右上角系統設定與編輯/新增/刪除功能。
-  - **委派管理**：特定使用者被授予「委派管理選單 (`Map_Account_ManageMenu`)」與「允許變更他人內容 (`CanEditOthers`)」權限後，可在自己負責的選單目錄下新增、編輯、刪除子選單與網頁項目，無需透過 admin 介入。
+- **免登入 Windows 自動驗證**：進站以 Negotiate 自動驗證（`/api/Auth/WhoAmI`），剝除網域前綴（`UMC\`）直接登入；401 自動重新驗證。本機除錯可於 `appsettings.Development.json` 設 `Auth:SimulatedWindowsAccount` 模擬任意帳號（設定熱重載，改完重整頁面即切換身分）。
+- **自動開戶與人事連動**：`Auth:AutoProvisionWindowsAccounts=true`；帳號不存在時自動建立（user / `role_1`），並至 `[WEB].[dbo].[notes_person]` 以 `EMPNO` 比對補姓名/部門。
+- **Cookie 權限即時同步**：`Program.cs` 的 `OnValidatePrincipal` 每請求比對 DB（`Accounts`）與 `AccountOverrides`，權限異動即時生效（⚠️ 查詢一律等值比對 EmpId，勿用 `.ToLower()` — CI 定序已不分大小寫，`LOWER()` 會使索引失效）。
+- **單一 12A 版面**：固定 `12A` / `fab_12a` / `role_1`，無廠區/語言切換（固定繁中）。16 個主選單目錄（`m_df1`~`m_tf6`）對全體使用者開放瀏覽（`GetVisibleMenuIdsAsync`，含 ETag 快取）。
+- **三種權限層級**（前後端閘門必須對齊，`MenuAuthService` ⇄ `sidebar.js getMenuPermissions`）：
+  - **admin**：全功能，系統設定六項（看板網頁/選單配置/權限/帳號/操作紀錄/使用率統計）。
+  - **委派管理員**：`Map_Account_ManageMenu` + `CanEditOthers`；可於委派目錄下增刪改子選單與網頁，也可建立頂層項目（以自己為建立者）；系統設定僅見「看板網頁管理」「選單配置管理」且清單只列可管理項目（頁面有委派範圍提示）。ACL 欄位僅 admin 有效（後端強制清空、前端開窗即隱藏）。
+  - **純瀏覽者**（`window.isPureViewer()`）：可看所有選單與看板，隱藏系統設定與全部編輯功能；空狀態文案引導至意見箱。
+- **統計與稽核**：`Stats/Ping` 心跳寫入 `SiteVisitorDailyStats`（身分只信 Cookie Claim，防偽冒）；`Summary/Daily/Monthly/Export` 鎖 `[Authorize(Roles="admin")]`；CSV 匯出經 `CsvField()`（RFC 4180 + 防公式注入）。活動紀錄走 Middleware → Channel Queue → HostedService 非同步落盤，另有每日清理。
+- **前端術語規範**：使用者可見文案不用 UV/PV 等術語，一律「進站人數 / 瀏覽次數」；程式內部欄位仍為 uv/pv。
+- **前端快取版本**：靜態 JS/CSS 以 `?v=YYYYMMDD` 做 cache-busting；**修改任一模組必須同步 bump 所有引用處的版本號且全站同一模組只能有一個版本 URL**（多版本並存會產生多個 module 實例）。
 
----
+## C# 開發規範
+1. **命名空間/分層**：`GenAI.*`；`Controllers/`（`*Controller`、`[Route("api/[controller]")]`）、`Services/`（`*Service`）、`Models/`（EF Entity）、`Data/`（`AppDbContext`）。
+2. **命名**：類別/屬性/方法 PascalCase；私有欄位 `_camelCase`；區域變數/參數 camelCase。
+3. **非同步**：DB 與 I/O 一律 `async/await`，方法以 `Async` 結尾；禁用 `.Result` / `.Wait()`。
+4. **DI**：`Program.cs` 註冊（Scoped/Singleton），一律建構子注入。
 
-## C# 開發規範與命名原則
-1. **命名空間與目錄分層**：專案命名空間統一為 `GenAI.*`。遵循清晰的 Layered Architecture：
-   - `Controllers/` — Web API 控制器，類別結尾為 `Controller` (如 `AccountsController`)，路由採用 `[Route("api/[controller]")]`。
-   - `Services/` — 商業邏輯層，類別結尾為 `Service` (如 `AccountService`)；`SchemaBootstrap.cs` 負責啟動時資料庫自我檢查與建表。
-   - `Models/` — EF Core Entity 模型，直接對應資料表名稱。
-   - `Data/` — EF Core 資料庫上下文 `AppDbContext` 及組態。
-2. **方法與變數命名 (PascalCase / camelCase)**：
-   - 類別、介面、屬性、方法一律採用 **PascalCase** (`EmpId`, `GetAccountsPagedAsync`)。
-   - 私有成員變數一律以底線開頭搭配 **camelCase** (`_dbContext`, `_accountService`, `_logger`)。
-   - 區域變數與方法參數採用 **camelCase** (`account`, `manageableMenus`)。
-3. **非同步開發原則 (Async/Await)**：
-   - 所有資料庫操作 (`EF Core`) 及 I/O 呼叫皆需使用 `async/await`，且方法名稱一律以 `Async` 結尾 (`FindAccountAsync`)。
-   - 避免在非同步方法中使用 `.Result` 或 `.Wait()`，造成 Thread Starvation 或 Deadlock。
-4. **相依性注入 (DI)**：
-   - 服務一律在 `Program.cs` 透過 `builder.Services.AddScoped<T>()` (與 request 生命週期綁定) 或 `AddSingleton<T>()` 註冊。
-   - 一律採用建構子注入 (Constructor Injection)。
-
----
-
-## MSSQL 資料庫開發規範與命名原則
-1. **資料庫與伺服器連線**：
-   - 連線目標：`Server=Sariel`，資料庫：`Database=GenAI`（環境變數：`ConnectionStrings__GenAI`）。絕對禁止連接或修改舊有資料庫 `EQDashboardV2`。
-2. **無 Migrations 與 SchemaBootstrap 原則**：
-   - 本專案 **不使用 EF Core Migrations (`dotnet ef migrations`)**。
-   - 程式啟動時由 `SchemaBootstrap.cs` (`CheckAndBootstrapDatabaseAsync`) 動態檢查並補齊缺失的表結構、欄位長度與索引。
-3. **資料表與外鍵命名原則**：
-   - 實體主表以單數名詞或清晰複合詞命名 (如 `Accounts`, `MenuConfig`, `Fab`, `Role`)。
-   - 主鍵 (PK) 命名為主表 ID 或特定實體標識 (如 `Id`, `EmpId`, `MenuId`)。
-   - **多對多外鍵對照表 (Mapping Tables)**：一律以 **`Map_`** 為前綴命名，並以單數詞串接關聯實體（例如 `Map_Account_Role`、`Map_Account_ManageMenu`、`Map_Account_DefaultPage`、`Map_Fab_Role`、`Map_Role_Menu`）。
-4. **文件權威來源 (`DB_Table.md`) 與同步規則**：
-   - `DB_Table.md` 是資料庫 Schema 的唯一權威來源。
-   - 任何資料表結構、欄位增刪修改，**必須同步修改 `DB_Table.md` 中的「完整建置 SQL」與文件末端的「5. 架構變更歷程」**（附加增量 `ALTER/CREATE` 指令），以便遠端部署重建時完全吻合。
-
----
+## MSSQL 開發規範
+1. **連線**：`Server=Sariel; Database=GenAI`（`ConnectionStrings__GenAI`）。**絕對禁止**連接或修改舊庫 `EQDashboardV2`。
+2. **無 Migrations**：啟動時 `SchemaBootstrap.cs` 冪等補齊欄位/索引/種子；全新 DB 用 `DB_Table.md` 完整建置 SQL。
+3. **命名**：主表單數/複合詞（`Accounts`, `Menus`）；PK 為 `Id`/`EmpId`/`MenuId`；多對多一律 `Map_` 前綴（`Map_Account_Role` 等）。
+4. **同步規則**：任何 schema 變更**必須**同步更新 `DB_Table.md` 的「完整建置 SQL」**並**在「5. 架構變更歷程」附加增量 `ALTER/CREATE`（只增不刪，遠端靠歷程增量升級，嚴禁刪表重建）。
 
 ## 專案目錄結構
-- `Program.cs` — 啟動組態（Serilog、Swagger、Cookie Auth、OnValidatePrincipal、`/health/ready`）
-- `Controllers/` — AuthController, AccountsController, MenusController, StatsController...
-- `Services/` — AccountService, MenuAuthService, SchemaBootstrap...
-- `Data/` / `Models/` — AppDbContext 與 Entity Entities
-- `wwwroot/` — 純靜態前端入口與 JavaScript 渲染模組 (`index.html`, `js/admin/*`, `js/render/*`, `css/*`)
-
----
+- `Program.cs` — 啟動組態（Serilog、Swagger、Cookie+Negotiate、OnValidatePrincipal、CSRF、Rate Limit、Production Guard、`/health/ready`）
+- `Controllers/` — Auth, Accounts, Menus, Apps, Fabs, Roles, Settings, PersonalSettings, Stats, ActivityLogs
+- `Services/` — Account, Auth, Menu, MenuAuth, Settings, IconStorage, SchemaBootstrap, ActivityLog*（Queue/Processor/Purge）, CacheInvalidation
+- `Data/` / `Models/` — `AppDbContext` 與 Entities（對應 `DB_Table.md` 19 張表）
+- `Middleware/` — ActivityLoggingMiddleware；`Helpers/` — ClientIpHelper
+- `wwwroot/` — 靜態前端（`index.html`、`partials/modals.html`、`js/{main,api,auth,config,store}.js`、`js/admin/*`、`js/render/*`、`js/ui/*`、`css/*`）
 
 ## 目前待辦事項 (TODOs)
-- [ ] **審核與流程去留確認**：目前一般使用者的「需求申請」入口仍保留於 UI，但「需求審核管理 (`page-audit-audit`)」已隱藏；待確認業務情境是否完全改由委派直接管理，或將申請流程重構整合。
-- [ ] **部門選單與網頁應用持續擴充**：依各部門委派管理員的實際操作反饋，持續優化並在主選單 (`DF1`~`TF6`) 下加入子選單與網頁項目連結。
-- [ ] **高並發進站明細查詢效能監測**：「進站同仁詳細紀錄 (`dtStatsDetail`)」採用 DataTables 純前端分頁與搜尋，後端 `/api/Stats/Daily` 已於 2026-07-19 移除 `Take(50)` 截斷、回傳單月全量明細。若日後歷史單月進站訪客紀錄龐大（如大於萬筆）造成傳輸/渲染變慢，再評估將 API 改為 Server-side Paged DataTable 查詢。
-
----
-
-## 修改與架構對齊歷史 (Modification History)
-- **2026-07-19 (Stats API 安全修正與效能/清理優化)**：
-  - **StatsController 授權補洞**：`Summary`/`Daily`/`Monthly`/`Export` 四支 API 原無任何 `[Authorize]`（全專案唯一），任何人可匿名匯出全員進站明細 CSV；已補上 `[Authorize(Roles = "admin")]` 與前端 sidebar 的 admin 閘門對齊。`Ping` 維持可匿名（心跳需收匿名訪客）。
-  - **Ping 防偽冒**：進站心跳的工號改為只信 Cookie Claim，不再採用 Request Body 的 `EmpId`（原本匿名請求可偽冒任意工號灌 PV）；未認證一律記 `ANONYMOUS` 且整包忽略 body 的姓名/部門。
-  - **查詢索引效能**：移除 `OnValidatePrincipal`（每請求執行）與 `AuthService.FindAccountAsync` 中 `EmpId.ToLower()` 比對——SQL Server CI 定序本身不分大小寫，`LOWER()` 反而使索引失效造成全表掃描。
-  - **Daily 明細全量回傳**：移除 `/api/Stats/Daily` 明細的 `Take(50)` 截斷，與前端 DataTables 純前端分頁（顯示「共 N 筆」）對齊。
-  - **Monthly 彙總下推 SQL**：`/api/Stats/Monthly` 改為 SQL 端以 (月份, 工號) 分組加總後才拉回，不再把整年原始明細載入記憶體。
-  - **CSV 匯出安全編碼**：`Export` 欄位改經 `CsvField()` 處理——RFC 4180 雙引號跳脫 + 防 Excel 公式注入（`=`/`+`/`-`/`@` 開頭前置單引號）。
-  - **版控清理**：移除 `wwwroot/layout_proposals.html`、`wwwroot/projector_preview.html`（設計草稿，原會隨站部署可被瀏覽）、`scratch_main.py`（寫死舊 EQDashboard 路徑的死碼）與根目錄 `memory.md`（與本檔內容重複造成漂移，規範以本檔為唯一權威）。
-- **2026-07-18 (DB Schema 對齊與增量 SQL 升級)**：
-  - **檢查與比對結果**：經連線遠端伺服器 `Sariel/GenAI` 查詢及 C# `AppDbContext`/`SchemaBootstrap` 程式交叉驗證，確認真實 DB 已運行 19 張資料表（新增 `SiteVisitorDailyStats` 表與索引 `IX_SiteVisitorDailyStats_EmpId`），而先前的 `DB_Table.md` SQL 僅有 18 張表。
-  - **冪等增量升級 (`DB_Table.md`)**：依據「嚴禁刪表重建、僅採冪等增量修改」的維護規則，於 `DB_Table.md` 結尾的「5. 架構變更歷程（增量 ALTER）」加入了日期 `[2026-07-18]` 專屬的增量 SQL (`IF OBJECT_ID IS NULL CREATE TABLE ...` 與 `CREATE NONCLUSTERED INDEX ...`)，方便遠端主機依序執行；並同步將「完整建置 SQL」與「資料表一覽」總數由 18 張表升級為 19 張。
+- [ ] **審核與流程去留確認**：一般使用者「需求申請」入口仍在 UI，「需求審核管理（`page-audit-audit`）」已隱藏；待確認改由委派直接管理或重構申請流程。
+- [ ] **部門選單與網頁應用持續擴充**：依委派管理員反饋，於 `DF1`~`TF6` 下持續加入子選單與網頁項目。
+- [ ] **高並發進站明細查詢效能監測**：`/api/Stats/Daily` 現回傳單月全量明細（前端 DataTables 分頁）；若單月超過約萬筆造成變慢，再評估 Server-side Paged 查詢。
+- [ ] **UI/UX 殘留優化**（依效益排序）：(1) 主選單依廠區前綴分組排序（現況 DF/ET/LT/TF 交錯，源自 `Map_Role_Menu` 順序）；(2) 導覽列預設「固定」並將偏好存入 PersonalSettings；(3) 動畫節制（支援 `prefers-reduced-motion`、分頁不可見時暫停背景動畫）。

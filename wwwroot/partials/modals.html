@@ -393,8 +393,24 @@
                         <div class="mb-3"><label class="form-label fw-bold small" data-i18n="open_target">開啟方式</label><select id="appTarget" class="form-select"><option value="iframe">內部嵌入 (Iframe)</option><option value="iframe_fullscreen">內部嵌入 (全螢幕/沉浸模式)</option><option value="blank">新分頁 (Blank)</option><option value="fullscreen" class="text-success fw-bold">新視窗開啟 (全螢幕)</option><option value="popup">新視窗開啟 (彈出小視窗)</option></select><div class="form-text text-muted small mt-1"><i class="fas fa-info-circle me-1 text-primary"></i>提示：若目標網站設有防嵌入規範（如 X-Frame-Options 導致畫面空白），請改選「新分頁」或「新視窗開啟」。</div></div>
                         <div class="mb-4">
                             <label class="form-label fw-bold small">APP 圖示 (支援上傳圖檔)</label>
+                            
+                            <!-- 1. 現有圖示指示與防破圖縮圖 (預設隱藏) -->
+                            <div id="appCurrentIconBox" class="p-2 mb-2 bg-light border rounded d-flex align-items-center gap-2" style="display: none !important;">
+                                <img id="appCurrentIconImg" src="" alt="當前圖示" style="width:36px; height:36px; object-fit:contain; border-radius:6px; background:#fff; border:1px solid #ddd;" onerror="this.parentElement.style.display='none'">
+                                <div>
+                                    <div class="small fw-bold text-dark">目前已配置專屬圖示</div>
+                                    <div class="small text-muted" style="font-size: 0.75rem;">若需更換請重新選擇檔案；若不更換請留空</div>
+                                </div>
+                            </div>
+
+                            <!-- 2. 檔案上傳框 (瀏覽器安全機制下，初始值必然為空) -->
                             <input type="file" id="appIconFile" class="form-control form-control-sm mb-2" accept="image/*" onchange="handleAppIconUpload(event)">
-                            <img id="appIconPreview" src="" alt="Icon Preview" style="width:64px; height:64px; object-fit:contain; display:none; border-radius:8px; border:1px solid #ccc;">
+                            
+                            <!-- 3. 新選取檔案即時預覽 -->
+                            <div id="appIconPreviewBox" class="p-2 bg-light border border-primary rounded d-flex align-items-center gap-2" style="display: none !important;">
+                                <img id="appIconPreview" src="" alt="新選預覽" style="width:48px; height:48px; object-fit:contain; border-radius:6px; background:#fff; border:1px solid #0d6efd;">
+                                <div class="small fw-bold text-primary">✓ 新選擇圖示預覽（按下儲存後生效）</div>
+                            </div>
                         </div>
                         <div class="text-end"><button type="submit" class="btn btn-primary fw-bold px-4" data-i18n="modal_btn_save">儲存</button></div>
                     </form>
