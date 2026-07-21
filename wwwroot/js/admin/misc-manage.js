@@ -280,7 +280,10 @@ export function openAppGridModal(id = null) {
             document.getElementById('appIconPreview').style.display = 'none';
             document.getElementById('appIconPreview').src = '';
         }
-        if (document.getElementById('appCurrentIconBox')) document.getElementById('appCurrentIconBox').style.setProperty('display', 'none', 'important');
+        if (document.getElementById('appCurrentIconBox')) {
+            document.getElementById('appCurrentIconBox').style.setProperty('display', 'none', 'important');
+            document.getElementById('appCurrentIconBox').dataset.removed = 'false';
+        }
         if (document.getElementById('appIconFile')) document.getElementById('appIconFile').value = '';
 
         if (id) {
@@ -290,9 +293,11 @@ export function openAppGridModal(id = null) {
                 document.getElementById('appUrl').value = app.url;
                 document.getElementById('appTarget').value = app.target || '_blank';
                 
-                // 編輯既存 APP 且該 App 擁有圖示時：展示「當前配置狀態框」供視覺安心確認，避免 File Input 為空造成的疑惑
-                if (app.iconBase64 && document.getElementById('appCurrentIconBox') && document.getElementById('appCurrentIconImg')) {
-                    document.getElementById('appCurrentIconImg').src = app.iconBase64;
+                // 編輯既存 APP 且該 App 擁有圖示時：展示「當前配置狀態框」供視覺即時確認，並處理虛擬目錄路徑與大小寫相容
+                let rawIcon = app.iconBase64 || app.IconBase64 || '';
+                if (rawIcon && document.getElementById('appCurrentIconBox') && document.getElementById('appCurrentIconImg')) {
+                    let iconSrc = (typeof window.toAppUrl === 'function' && rawIcon.startsWith('/')) ? window.toAppUrl(rawIcon) : rawIcon;
+                    document.getElementById('appCurrentIconImg').src = iconSrc;
                     document.getElementById('appCurrentIconBox').style.removeProperty('display');
                     document.getElementById('appCurrentIconBox').style.display = 'flex';
                 }
@@ -301,6 +306,21 @@ export function openAppGridModal(id = null) {
         showModalSafely('appGridModal');
     } catch (e) { console.error("[openAppGridModal] 錯誤:", e); }
 }
+
+export function removeCurrentAppIcon() {
+    const box = document.getElementById('appCurrentIconBox');
+    if (box) {
+        box.style.setProperty('display', 'none', 'important');
+        box.dataset.removed = 'true';
+    }
+    const fileInput = document.getElementById('appIconFile');
+    if (fileInput) fileInput.value = '';
+    const previewBox = document.getElementById('appIconPreviewBox');
+    if (previewBox) previewBox.style.setProperty('display', 'none', 'important');
+    const previewImg = document.getElementById('appIconPreview');
+    if (previewImg) { previewImg.style.display = 'none'; previewImg.src = ''; }
+}
+window.removeCurrentAppIcon = removeCurrentAppIcon;
 
 export async function saveAppItem(e) {
     // ⭐️ 核心防重整
@@ -317,6 +337,7 @@ export async function saveAppItem(e) {
         const previewBox = document.getElementById('appIconPreviewBox');
         const hasNewIconPreview = previewImg && previewImg.src && (previewImg.style.display === 'block' || (previewBox && previewBox.style.display !== 'none'));
         const newIconSrc = hasNewIconPreview ? previewImg.src : '';
+        const isIconRemoved = document.getElementById('appCurrentIconBox') && document.getElementById('appCurrentIconBox').dataset.removed === 'true';
 
         let apps = getAppItems();
         let appData;
@@ -330,6 +351,8 @@ export async function saveAppItem(e) {
                 apps[idx].target = target; apps[idx].Target = target;
                 if (hasNewIconPreview) {
                     apps[idx].iconBase64 = newIconSrc; apps[idx].IconBase64 = newIconSrc; 
+                } else if (isIconRemoved) {
+                    apps[idx].iconBase64 = ''; apps[idx].IconBase64 = '';
                 }
                 appData = apps[idx];
             }

@@ -394,16 +394,23 @@
                         <div class="mb-4">
                             <label class="form-label fw-bold small">APP 圖示 (支援上傳圖檔)</label>
                             
-                            <!-- 1. 現有圖示指示與防破圖縮圖 (預設隱藏) -->
-                            <div id="appCurrentIconBox" class="p-2 mb-2 bg-light border rounded d-flex align-items-center gap-2" style="display: none !important;">
-                                <img id="appCurrentIconImg" src="" alt="當前圖示" style="width:36px; height:36px; object-fit:contain; border-radius:6px; background:#fff; border:1px solid #ddd;" onerror="this.parentElement.style.display='none'">
-                                <div>
-                                    <div class="small fw-bold text-dark">目前已配置專屬圖示</div>
-                                    <div class="small text-muted" style="font-size: 0.75rem;">若需更換請重新選擇檔案；若不更換請留空</div>
+                            <!-- 1. 現有圖示指示與縮圖卡片 (對齊圖二目標示意圖排版，支援垃圾桶移除舊圖) -->
+                            <div id="appCurrentIconBox" class="p-3 mb-2 bg-white border rounded-3 shadow-sm d-flex align-items-center justify-content-between" style="display: none !important; border-color: #dee2e6 !important;">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div style="width: 64px; height: 64px; border-radius: 12px; border: 1px solid #e9ecef; box-shadow: 0 2px 5px rgba(0,0,0,0.06); display: flex; align-items: center; justify-content: center; background: #fff; overflow: hidden; flex-shrink: 0;">
+                                        <img id="appCurrentIconImg" src="" alt="當前圖示" style="max-width: 56px; max-height: 56px; object-fit: contain;">
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold text-dark mb-1" style="font-size: 0.95rem;">目前已配置專屬圖示</div>
+                                        <div class="text-muted" style="font-size: 0.78rem; line-height: 1.4;">若需更換請重新選擇檔案；若要移除圖示請點擊右方垃圾桶</div>
+                                    </div>
                                 </div>
+                                <button type="button" id="appRemoveIconBtn" class="btn btn-outline-danger btn-sm px-2 py-1 ms-2" title="移除現有圖示" onclick="removeCurrentAppIcon()" style="border-radius: 8px; flex-shrink: 0;">
+                                    <i class="fas fa-trash-alt" style="font-size: 1.1rem;"></i>
+                                </button>
                             </div>
 
-                            <!-- 2. 檔案上傳框 (瀏覽器安全機制下，初始值必然為空) -->
+                            <!-- 2. 檔案上傳框 -->
                             <input type="file" id="appIconFile" class="form-control form-control-sm mb-2" accept="image/*" onchange="handleAppIconUpload(event)">
                             
                             <!-- 3. 新選取檔案即時預覽 -->
