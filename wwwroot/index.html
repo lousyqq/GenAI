@@ -562,7 +562,7 @@
 
     <!-- ⭐️ 快取破解碼：必須在 modals.html fetch 之前定義，否則 ?v= 會是空字串、
          部署後使用者拿到舊版 modals (Round-7 修)。其他 <script src> 共用此版本碼。 -->
-    <script>window.__APP_VER__ = '20260607e';</script>
+    <script>window.__APP_VER__ = '20260721b';</script>
 
     <!-- ⭐️ 動態載入 Modals partial (跟 JS 共用同一個 cache-bust 版本碼)
          Round-5 B14：失敗時不再只 console.warn — 顯示明確錯誤 banner，因為沒有 modals 後續所有「新增/編輯」按鈕都會死掉。 -->
@@ -593,27 +593,27 @@
     <script src="appbase.js"></script>
 
     <!-- __APP_VER__ 已在 modals.html fetch 之前定義；以下 <script src> 共用同一版本碼 -->
-    <script type="module" src="js/config.js?v=20260719"></script>
-    <script type="module" src="js/api.js?v=20260607k"></script>
-    <script type="module" src="js/auth.js?v=20260607k"></script>
+    <script type="module" src="js/config.js?v=20260721b"></script>
+    <script type="module" src="js/api.js?v=20260721b"></script>
+    <script type="module" src="js/auth.js?v=20260721b"></script>
     <!-- ui 模組 (從 ui.js 拆分) -->
-    <script type="module" src="js/ui/layout.js?v=20260607k"></script>
-    <script type="module" src="js/ui/navigation.js?v=20260719"></script>
-    <script type="module" src="js/ui/dialogs.js?v=20260607k"></script>
+    <script type="module" src="js/ui/layout.js?v=20260721b"></script>
+    <script type="module" src="js/ui/navigation.js?v=20260721b"></script>
+    <script type="module" src="js/ui/dialogs.js?v=20260721b"></script>
     <!-- render 模組 (從 render.js 拆分) -->
-    <script type="module" src="js/render/sidebar.js?v=20260719"></script>
-    <script type="module" src="js/render/sidebar-item.js?v=20260607k"></script>
-    <script type="module" src="js/render/tables.js?v=20260719"></script>
-    <script type="module" src="js/render/account-ui.js?v=20260607k"></script>
+    <script type="module" src="js/render/sidebar.js?v=20260721b"></script>
+    <script type="module" src="js/render/sidebar-item.js?v=20260721b"></script>
+    <script type="module" src="js/render/tables.js?v=20260721b"></script>
+    <script type="module" src="js/render/account-ui.js?v=20260721b"></script>
     <!-- admin 模組 (從 admin.js 拆分) -->
-    <script type="module" src="js/admin/modal-utils.js?v=20260607k"></script>
-    <script type="module" src="js/admin/fab-manage.js?v=20260607k"></script>
-    <script type="module" src="js/admin/role-manage.js?v=20260607k"></script>
-    <script type="module" src="js/admin/account-manage.js?v=20260607k"></script>
-    <script type="module" src="js/admin/menu-manage.js?v=20260607k"></script>
-    <script type="module" src="js/admin/activity-log.js?v=20260607k"></script>
-    <script type="module" src="js/admin/misc-manage.js?v=20260607k"></script>
-    <script type="module" src="js/main.js?v=20260719"></script>
+    <script type="module" src="js/admin/modal-utils.js?v=20260721b"></script>
+    <script type="module" src="js/admin/fab-manage.js?v=20260721b"></script>
+    <script type="module" src="js/admin/role-manage.js?v=20260721b"></script>
+    <script type="module" src="js/admin/account-manage.js?v=20260721b"></script>
+    <script type="module" src="js/admin/menu-manage.js?v=20260721b"></script>
+    <script type="module" src="js/admin/activity-log.js?v=20260721b"></script>
+    <script type="module" src="js/admin/misc-manage.js?v=20260721b"></script>
+    <script type="module" src="js/main.js?v=20260721b"></script>
 
 </body>
 </html>

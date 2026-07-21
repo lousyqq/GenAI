@@ -238,7 +238,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             // 冷啟動（尚無有效 cookie）時 GetInitialData 必然 401 → console 留下失敗噪音 + 一次無效重查詢。
             //   先用輕量 MyProfile 探測登入態：有效才抓 InitialData；無效直接走下方 tryAutoLogin，
             //   登入完成後 completeLoginAfterAuth 會自行補抓 InitialData（auth.js 已有該邏輯）。
-            const authProbe = await fetch(window.toAppUrl ? window.toAppUrl('/api/Auth/MyProfile') : '/api/Auth/MyProfile', { cache: 'no-store' }).catch(() => null);
+            const probeUrl = window.toAppUrl ? window.toAppUrl('/api/Auth/MyProfile') : '/api/Auth/MyProfile';
+            const authProbe = await fetch(`${probeUrl}?_t=${Date.now()}`, { cache: 'no-store', headers: { 'Pragma': 'no-cache', 'Cache-Control': 'no-cache' } }).catch(() => null);
             if (authProbe && authProbe.ok) {
                 isDbLoaded = await fetchInitialDataFromDB();
             }

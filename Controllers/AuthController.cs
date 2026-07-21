@@ -64,6 +64,7 @@ public class AuthController : ControllerBase
     /// 但 "UMC" 改用 appsettings.Auth.WindowsDomainStripPrefix 控制，部署到不同網域時不必改 code。
     /// </summary>
     [HttpGet("WhoAmI")]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     [Authorize(AuthenticationSchemes = NegotiateDefaults.AuthenticationScheme)]
     public async Task<IActionResult> WhoAmI()
     {
@@ -211,6 +212,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpGet("MyProfile")]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     [Authorize]
     public async Task<IActionResult> MyProfile()
     {

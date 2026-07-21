@@ -167,16 +167,16 @@ builder.Services
             if (!string.IsNullOrWhiteSpace(empId))
             {
                 var authSetForSim = context.HttpContext.RequestServices.GetService<Microsoft.Extensions.Options.IOptionsSnapshot<AuthSettings>>()?.Value;
-                if (!string.IsNullOrWhiteSpace(authSetForSim?.SimulatedWindowsAccount))
+                var authSvc = context.HttpContext.RequestServices.GetService<IAuthService>();
+                var expectedRaw = !string.IsNullOrWhiteSpace(authSetForSim?.SimulatedWindowsAccount)
+                    ? authSetForSim.SimulatedWindowsAccount
+                    : (context.Principal?.Identity?.Name ?? "");
+                var expectedEmpId = authSvc?.ExtractEmpIdFromWindowsIdentity(expectedRaw);
+                if (!string.IsNullOrWhiteSpace(expectedEmpId) && !string.Equals(empId, expectedEmpId, StringComparison.OrdinalIgnoreCase))
                 {
-                    var authSvc = context.HttpContext.RequestServices.GetService<IAuthService>();
-                    var simEmpId = authSvc?.ExtractEmpIdFromWindowsIdentity(authSetForSim.SimulatedWindowsAccount);
-                    if (!string.IsNullOrWhiteSpace(simEmpId) && !string.Equals(empId, simEmpId, StringComparison.OrdinalIgnoreCase))
-                    {
-                        context.RejectPrincipal();
-                        await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-                        return;
-                    }
+                    context.RejectPrincipal();
+                    await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                    return;
                 }
 
                 var loginSource = context.Principal?.FindFirstValue("LoginSource") ?? "windows";

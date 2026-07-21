@@ -133,9 +133,15 @@ export async function fetchWhoAmI(allowAutoLogin = false) {
     if (btn) btn.disabled = true;
 
     try {
-        const resp = await fetch('/api/Auth/WhoAmI', {
+        const urlStr = window.toAppUrl ? window.toAppUrl('/api/Auth/WhoAmI') : '/api/Auth/WhoAmI';
+        const resp = await fetch(`${urlStr}?_t=${Date.now()}`, {
             method: 'GET',
-            credentials: 'include'
+            credentials: 'include',
+            cache: 'no-store',
+            headers: {
+                'Pragma': 'no-cache',
+                'Cache-Control': 'no-cache'
+            }
         });
 
         if (resp.status === 401) {
@@ -174,8 +180,18 @@ export async function fetchWhoAmI(allowAutoLogin = false) {
                 //     - allowAutoLogin 只有初次進入點為 true
                 //     - _autoLoginInProgress 防雙重觸發 (Round-5 B2 的 LoginCount +2 問題)
                 const currId = window.cleanId ? window.cleanId(appState.currentUser?.id || appState.currentUser?.empId || '') : String(appState.currentUser?.id || appState.currentUser?.empId || '').trim().toLowerCase();
+                let storedEmpId = '';
+                try {
+                    const storedRaw = localStorage.getItem('umc_current_user');
+                    if (storedRaw && storedRaw !== 'null' && storedRaw !== 'undefined') {
+                        const parsed = JSON.parse(storedRaw);
+                        storedEmpId = String(parsed.empId || parsed.id || '').trim().toLowerCase();
+                        if (window.cleanId) storedEmpId = window.cleanId(storedEmpId);
+                    }
+                } catch(e) {}
+                
                 const targetId = window.cleanId ? window.cleanId(data.empId || '') : String(data.empId || '').trim().toLowerCase();
-                const isUserMismatch = Boolean(appState.currentUser && targetId && currId && currId !== targetId);
+                const isUserMismatch = Boolean(targetId && ((currId && currId !== targetId) || (storedEmpId && storedEmpId !== targetId)));
 
                 if (allowAutoLogin 
                     && !_autoLoginInProgress
