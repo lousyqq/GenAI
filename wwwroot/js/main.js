@@ -245,7 +245,12 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
         }
 
-        loadingOverlay.remove();
+        // ⭐️ 延後移除黑色 loading 遮罩：避免過早移除造成 WhoAmI 偵測期間畫面閃動或跳出登入視窗 (Zero FOUC)
+        window.removeDbLoadingOverlay = function() {
+            const ov = document.getElementById('db-loading-overlay');
+            if (ov) ov.remove();
+        };
+
         initModalInstances();
 
         if (isDbLoaded) {
@@ -253,6 +258,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             const restored = restoreLoginFromStorage();
             if (restored) {
                 initDashboardUI();
+                // ✅ 主畫面已經準備就緒，此時才移除黑色載入遮罩
+                window.removeDbLoadingOverlay();
                 // 即使從 localStorage 還原了快取帳號，依然需要向伺服器驗證當前桌機 Windows 身分 (WhoAmI)；
                 // 如果桌機帳號已改變 (例如從 00058896 切換回 yu-ting)，會自動更新 localStorage 並刷新頁面。
                 waitForTryAutoLogin(5000).then(ready => { if (ready) window.tryAutoLogin(); });
@@ -262,22 +269,20 @@ document.addEventListener("DOMContentLoaded", async () => {
                     await window.tryAutoLogin();
                 } else {
                     console.error('tryAutoLogin 尚未載入（auth.js 載入順序/路徑可能有問題）');
-                    // 保底：至少顯示登入框
+                    window.removeDbLoadingOverlay();
                     if (typeof showLoginOverlay === 'function') showLoginOverlay('windows');
                 }
-
             }
         } else {
-            // 2) 無 DB 資料 (可能為 401 未登入)，走自動偵測或顯示手動登入
+            // 2) 無 DB 資料 (可能為 401 未登入)，保留載入遮罩一路等到 tryAutoLogin / WhoAmI 完成
             const ready = await waitForTryAutoLogin(5000);
             if (ready) {
                 await window.tryAutoLogin();
             } else {
                 console.error('tryAutoLogin 尚未載入（auth.js 載入順序/路徑可能有問題）');
-                // 保底：至少顯示登入框
+                window.removeDbLoadingOverlay();
                 if (typeof showLoginOverlay === 'function') showLoginOverlay('windows');
             }
-
         }
     } catch (error) {
         clearTimeout(loadingTimeoutId);

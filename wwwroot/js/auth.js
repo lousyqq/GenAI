@@ -461,6 +461,11 @@ export async function completeLoginAfterAuth(empId, source, fallbackAccount) {
 // 6) Overlay 顯示 / 隱藏
 // =============================================================
 export function showLoginOverlay(defaultTab) {
+    // ⭐ 確實在要顯示登入/重試畫面時才移除初始黑色遮罩，避免被蓋住或過早露底
+    if (typeof window.removeDbLoadingOverlay === 'function') window.removeDbLoadingOverlay();
+    const dbOv = document.getElementById('db-loading-overlay');
+    if (dbOv) dbOv.remove();
+
     const ov = document.getElementById('login-overlay');
     if (!ov) return;
     ov.style.setProperty('display', 'flex', 'important');
@@ -498,6 +503,10 @@ export function showLoginOverlay(defaultTab) {
 }
 
 export function hideLoginOverlay() {
+    if (typeof window.removeDbLoadingOverlay === 'function') window.removeDbLoadingOverlay();
+    const dbOv = document.getElementById('db-loading-overlay');
+    if (dbOv) dbOv.remove();
+
     const ov = document.getElementById('login-overlay');
     if (ov) ov.style.setProperty('display', 'none', 'important');
 }
