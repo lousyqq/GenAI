@@ -232,14 +232,14 @@ body.nav-hidden .top-navbar-group {
     gap: 12px;
     overflow-x: auto;
     padding: 12px;
-    background: #f8fafc;
-    border: 2px dashed #cbd5e1;
+    background: var(--sortable-bg);
+    border: 2px dashed var(--sortable-border);
     border-radius: 8px;
     min-height: 50px;
 }
 
 .sortable-root-item {
-    background: white;
+    background: var(--sortable-item-bg);
     border: 1px solid #0d6efd;
     color: #0d6efd;
     padding: 6px 18px;
@@ -259,7 +259,7 @@ body.nav-hidden .top-navbar-group {
 
     .sortable-root-item.dragging {
         opacity: 0.5;
-        background: #e2e8f0;
+        background: var(--border-color);
     }
 
     .sortable-root-item.drag-over {

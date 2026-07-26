@@ -155,7 +155,7 @@ export function renderPersonalMenuManage() {
                     ${expandBtn}
                     <div style="width:24px; text-align:center;">${iconHtml}</div>
                     <div class="ms-2 text-start lh-sm">
-                        <div class="fw-bold text-dark ${isHidden ? 'text-decoration-line-through text-muted' : ''}">${dName}</div>
+                        <div class="fw-bold ${isHidden ? 'text-decoration-line-through text-muted' : ''}">${dName}</div>
                     </div>
                 </div>
             `;
@@ -385,7 +385,7 @@ function _accRowData(a) {
 
     if (isAdminRole) {
         delegationStatusHtml = '<span class="badge bg-success"><i class="fas fa-crown me-1"></i>全權管理 (Admin)</span>';
-        manageableMenusHtml = '<span class="badge bg-light text-dark border"><i class="fas fa-check-double text-success me-1"></i>全系統所有選單</span>';
+        manageableMenusHtml = '<span class="badge border border-secondary text-secondary"><i class="fas fa-check-double text-success me-1"></i>全系統所有選單</span>';
     } else {
         if (!manageMenus || manageMenus.length === 0) {
             delegationStatusHtml = '<span class="badge bg-secondary">無</span>';
@@ -394,7 +394,7 @@ function _accRowData(a) {
             if (canEditOthers) {
                 delegationStatusHtml = '<span class="badge bg-primary">有 / 允許變更他人內容</span>';
             } else {
-                delegationStatusHtml = '<span class="badge bg-info text-dark">有 / 僅限自建內容</span>';
+                delegationStatusHtml = '<span class="badge border border-info text-info">有 / 僅限自建內容</span>';
             }
             const allMenus = typeof getCustomMenus === 'function' ? getCustomMenus() : [];
             const badges = manageMenus.map(mId => {
@@ -411,7 +411,7 @@ function _accRowData(a) {
     const actionBtns = `<div class="d-flex flex-nowrap justify-content-center gap-2"><button type="button" class="btn btn-sm btn-outline-primary" style="width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center;" onclick="event.stopPropagation(); editAccount('${jsId}');" title="編輯"><i class="fas fa-edit"></i></button><button type="button" class="btn btn-sm btn-outline-danger" style="width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center;" onclick="event.stopPropagation(); deleteAccount('${jsId}')" title="刪除"><i class="fas fa-trash-alt"></i></button></div>`;
     return [
         `<span class="fw-bold">${idCell}</span>`,
-        `<div class="fw-bold text-dark">${aName}</div><div class="small text-muted">${aDept}</div>`,
+        `<div class="fw-bold">${aName}</div><div class="small text-muted">${aDept}</div>`,
         lvlBadge,
         defPagesHtml,
         delegationStatusHtml,
@@ -515,8 +515,8 @@ export function renderWebpageTable() {
                </div>`
             : (mEnabled ? '<span class="badge bg-success">啟用</span>' : '<span class="badge bg-secondary">停用</span>');
         let typeBadge = mMode === 'app_grid'
-            ? '<span class="badge bg-info text-dark border"><i class="fas fa-th-large"></i> 應用集合</span>'
-            : '<span class="badge bg-light text-dark border"><i class="fas fa-link"></i> 網頁連結</span>';
+            ? '<span class="badge border border-info text-info"><i class="fas fa-th-large"></i> 應用集合</span>'
+            : '<span class="badge border border-secondary text-secondary"><i class="fas fa-link"></i> 網頁連結</span>';
 
         // 開啟模式（第一行）
         const targetMap = {
@@ -559,7 +559,7 @@ export function renderWebpageTable() {
         if (!btnsHtml) btnsHtml = '<span class="badge bg-light text-muted border">僅檢視</span>';
         let actionBtns = `<div class="d-flex flex-nowrap justify-content-center gap-2">${btnsHtml}</div>`;
 
-        htmlBuffer.push(`<tr class="draggable-row" draggable="true" ondragstart="handleDragStart(event, '${mId}', null)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, '${mId}', null, 'webpage')"><td class="text-start ps-3 fw-bold text-dark align-middle"><i class="fas fa-grip-vertical text-muted me-2 opacity-50"></i>${iconHtml} ${mDName} <br><small class="text-muted fw-normal ms-4">${mSysName}</small></td><td class="align-middle">${typeBadge}</td><td class="align-middle">${statusBadge}</td><td class="text-start align-middle">${pathCellHtml}</td><td class="text-center align-middle" style="white-space: nowrap; width: 1%; vertical-align: middle;">${actionBtns}</td></tr>`);
+        htmlBuffer.push(`<tr class="draggable-row" draggable="true" ondragstart="handleDragStart(event, '${mId}', null)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, '${mId}', null, 'webpage')"><td class="text-start ps-3 fw-bold align-middle"><i class="fas fa-grip-vertical text-muted me-2 opacity-50"></i>${iconHtml} ${mDName} <br><small class="text-muted fw-normal ms-4">${mSysName}</small></td><td class="align-middle">${typeBadge}</td><td class="align-middle">${statusBadge}</td><td class="text-start align-middle">${pathCellHtml}</td><td class="text-center align-middle" style="white-space: nowrap; width: 1%; vertical-align: middle;">${actionBtns}</td></tr>`);
     });
     tbody.innerHTML = htmlBuffer.join('');
     initDataTable('dtWebpage', true);
@@ -580,7 +580,7 @@ export function renderMenuConfigTable() {
             const badges = manageIds.map(id => {
                 const m = menus.find(x => window.cleanId(x.id) === window.cleanId(id));
                 const name = m ? (m.displayName || m.name || id) : id;
-                return `<span class="badge bg-white text-dark border me-1">${window.escapeHTML(name)}</span>`;
+                return `<span class="badge border border-info text-info me-1 mb-1 bg-transparent">${window.escapeHTML(name)}</span>`;
             }).join('');
             scopeHint.style.display = '';
             scopeHint.innerHTML = `<i class="fas fa-user-shield me-1 text-warning"></i>`
@@ -615,7 +615,7 @@ export function renderMenuConfigTable() {
         children.forEach(child => {
             let isFolder = child.menuMode === 'folder';
             let icon = isFolder ? '<i class="fas fa-folder text-warning me-1"></i>' : '';
-            badges += `<span class="badge border border-secondary text-dark bg-white shadow-sm me-1 mb-1 fw-normal px-2 py-1">${icon}${window.escapeHTML(child.displayName)}</span>`;
+            badges += `<span class="badge border border-secondary text-secondary me-1 mb-1 fw-normal px-2 py-1">${icon}${window.escapeHTML(child.displayName)}</span>`;
             if (isFolder) {
                 badges += getDescendantBadges(child.id, allMenus, visited);
             }
@@ -627,7 +627,7 @@ export function renderMenuConfigTable() {
     roots.forEach(m => {
         // ⭐️ 狀態開關互動功能：移除 disabled 並綁定 onchange 事件
         let statusSwitch = `<div class="form-check form-switch d-flex justify-content-center"><input class="form-check-input cursor-pointer" type="checkbox" ${m.enabled ? 'checked' : ''} onchange="window.toggleMenuEnable('${m.id}', this.checked)"></div>`;
-        let typeBadge = m.menuMode === 'folder' ? '<span class="badge bg-warning text-dark border"><i class="fas fa-folder me-1"></i>主選單</span>' : (m.menuMode === 'app_grid' ? '<span class="badge bg-success text-white border"><i class="fas fa-th-large me-1"></i>應用集合</span>' : '<span class="badge border border-primary text-primary bg-white"><i class="fas fa-link me-1"></i>獨立網頁</span>');
+        let typeBadge = m.menuMode === 'folder' ? '<span class="badge bg-warning text-dark border"><i class="fas fa-folder me-1"></i>主選單</span>' : (m.menuMode === 'app_grid' ? '<span class="badge border border-success text-success"><i class="fas fa-th-large me-1"></i>應用集合</span>' : '<span class="badge border border-primary text-primary"><i class="fas fa-link me-1"></i>獨立網頁</span>');
 
         const tMap = {
             'iframe': '<span class="text-secondary fw-bold small"><i class="fas fa-columns me-1"></i> 內部嵌入</span>',
@@ -669,7 +669,7 @@ export function renderMenuConfigTable() {
             <div class="d-flex align-items-center">
                 <i class="fas fa-grip-vertical text-muted me-3" style="cursor: grab;" title="拖曳排序"></i>
                 <div>
-                    <div class="fw-bold text-dark fs-6">${window.escapeHTML(m.displayName)}</div>
+                    <div class="fw-bold fs-6">${window.escapeHTML(m.displayName)}</div>
                     <div class="text-muted small">${window.escapeHTML(m.name)}</div>
                 </div>
             </div>`;
@@ -748,7 +748,7 @@ window.renderFabRoleCheckboxes = function (selectedIds) {
         htmlBuffer.push(`
             <div class="form-check form-check-inline border rounded px-3 py-1 bg-white mb-1 shadow-sm" style="border-color:#dee2e6 !important;">
                 <input class="form-check-input ms-0 me-2 fab-role-cb cursor-pointer" type="radio" name="fabRoleRadioGroup" id="fr_${safeRId}" value="${safeRId}" ${isChecked}>
-                <label class="form-check-label small fw-bold text-dark cursor-pointer" for="fr_${safeRId}">${rName}</label>
+                <label class="form-check-label small fw-bold cursor-pointer" for="fr_${safeRId}">${rName}</label>
             </div>
         `);
     });

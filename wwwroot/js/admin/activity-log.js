@@ -76,7 +76,7 @@ export function renderActivityRow(r) {
             ? `<span class="badge bg-danger bg-opacity-25 text-danger border border-danger border-opacity-50">${r.statusCode ?? '✗'}</span>`
             : `<span class="badge bg-secondary bg-opacity-25 text-secondary">${r.statusCode ?? '—'}</span>`;
     const sourceBadge = r.loginSource
-        ? `<span class="badge bg-light text-dark border">${window.escapeHTML(r.loginSource)}</span>`
+        ? `<span class="badge border border-secondary text-secondary">${window.escapeHTML(r.loginSource)}</span>`
         : '';
     const detailHtml = r.detail || r.errorMessage
         ? `<small class="text-muted">${window.escapeHTML(r.errorMessage || r.detail || '').slice(0, 120)}</small>`
@@ -87,7 +87,7 @@ export function renderActivityRow(r) {
         <td class="small fw-bold">${window.escapeHTML(r.empId || '—')}</td>
         <td class="small">${window.escapeHTML(r.empName || '')}</td>
         <td class="small">${sourceBadge}</td>
-        <td class="small"><span class="badge bg-info bg-opacity-15 text-primary border">${window.escapeHTML(r.category || '')}</span></td>
+        <td class="small"><span class="badge border border-info text-info">${window.escapeHTML(r.category || '')}</span></td>
         <td class="small">${window.escapeHTML(r.action || '')}</td>
         <td class="small text-muted">${window.escapeHTML(r.httpMethod || '')}</td>
         <td class="small text-muted" style="max-width:300px; overflow:hidden; text-overflow:ellipsis;" title="${window.escapeHTML(r.path || '')}">${window.escapeHTML(r.path || '')}</td>

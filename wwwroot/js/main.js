@@ -214,6 +214,9 @@ document.addEventListener('click', function(e) {
 });
 
 document.addEventListener("DOMContentLoaded", async () => {
+    // ⭐ 初始化深色/淺色模式切換按鈕圖示
+    if (typeof initTheme === 'function') initTheme();
+
     // console.log("正在從資料庫載入資料...");
     const loadingOverlay = document.createElement('div');
     loadingOverlay.id = 'db-loading-overlay';

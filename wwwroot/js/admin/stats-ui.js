@@ -201,7 +201,7 @@ async function loadSummaryKPIs() {
                     html += `
                         <div>
                             <div class="d-flex justify-content-between align-items-center small mb-1">
-                                <span class="fw-bold text-dark"><span class="badge bg-light text-dark border me-1">${idx + 1}</span>${window.escapeHTML(d.department || '未分類')}</span>
+                                <span class="fw-bold"><span class="badge bg-light text-body border me-1">${idx + 1}</span>${window.escapeHTML(d.department || '未分類')}</span>
                                 <span class="fw-bold" style="color: ${color};">${d.uv} 人 (${percent}%) / ${d.pv} 次</span>
                             </div>
                             <div class="progress" style="height: 8px; background-color: #f1f5f9;">
@@ -270,7 +270,7 @@ async function loadDailyBreakdown(year, month) {
                         <td class="text-secondary">${item.statDate}</td>
                         <td class="fw-bold text-primary">${window.escapeHTML(item.empId)}</td>
                         <td class="fw-bold">${window.escapeHTML(item.empName)}</td>
-                        <td><span class="badge bg-light text-dark border">${window.escapeHTML(item.department)}</span></td>
+                        <td><span class="badge bg-light text-body border">${window.escapeHTML(item.department)}</span></td>
                         <td><span class="badge bg-primary px-3 py-1 fs-6">${item.pageViews}</span></td>
                         <td class="small text-muted">${item.firstVisit}</td>
                         <td class="small text-muted">${item.lastVisit}</td>
@@ -341,7 +341,7 @@ async function loadMonthlyBreakdown(year) {
                     else if (item.pv > 20) { badgeColor = 'bg-info'; label = '穩定進站'; }
                     return `
                         <tr>
-                            <td class="fw-bold text-dark fs-6">${item.monthLabel}</td>
+                            <td class="fw-bold text-body fs-6">${item.monthLabel}</td>
                             <td><span class="badge bg-success px-3 py-1 fs-6">${item.uv.toLocaleString()} 人</span></td>
                             <td><span class="badge bg-primary px-3 py-1 fs-6">${item.pv.toLocaleString()} 次</span></td>
                             <td class="fw-bold text-secondary">${avg} <small>次/人</small></td>
