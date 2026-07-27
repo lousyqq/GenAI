@@ -1,6 +1,6 @@
-import { enforceSystemModeUI } from './layout.js?v=20260607k';
-import { changeLanguage, renderLangSwitcher } from './navigation.js?v=20260719';
-import { appState } from '../store.js?v=20260607k';
+import { enforceSystemModeUI } from './layout.js?v=20260727';
+import { changeLanguage, renderLangSwitcher } from './navigation.js?v=20260727';
+import { appState } from '../store.js?v=20260727';
 
 
 ﻿// === ui/dialogs.js - 同步按鈕、自訂 Alert/Confirm、語系更新 ===

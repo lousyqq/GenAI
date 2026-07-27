@@ -1,13 +1,13 @@
 // === admin/role-manage.js - 群組管理 CRUD ===
 
-import { getCustomMenus, getRoles } from '../config.js?v=20260719';
+import { getCustomMenus, getRoles } from '../config.js?v=20260727';
 
 
-import { hideModalSafely, showModalSafely } from './modal-utils.js?v=20260607k';
-import { deleteRoleAPI, fetchInitialDataFromDB, saveRoleAPI } from '../api.js?v=20260607k';
-import { renderSidebarMenus } from '../render/sidebar.js?v=20260719';
-import { renderAccountTable, renderFabTable, renderRoleTable } from '../render/tables.js?v=20260719';
-import { customAlert, customConfirm } from '../ui/dialogs.js?v=20260607k';
+import { hideModalSafely, showModalSafely } from './modal-utils.js?v=20260727';
+import { deleteRoleAPI, fetchInitialDataFromDB, saveRoleAPI } from '../api.js?v=20260727';
+import { renderSidebarMenus } from '../render/sidebar.js?v=20260727';
+import { renderAccountTable, renderFabTable, renderRoleTable } from '../render/tables.js?v=20260727';
+import { customAlert, customConfirm } from '../ui/dialogs.js?v=20260727';
 
 // === Roles 群組管理 ===
 export function openAddRoleModal() {

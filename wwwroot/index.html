@@ -5,7 +5,7 @@
     <script>
         (function(){
             var t = localStorage.getItem('genai_theme');
-            if (!t) { try { t = window.matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light'; } catch(e) { t = 'light'; } }
+            if (!t) { t = 'light'; }
             document.documentElement.setAttribute('data-theme', t);
         })();
     </script>
@@ -34,10 +34,11 @@
             integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
 
     <!-- CSS 模組 (從 style.css 拆分) -->
-    <link href="css/variables.css?v=20260726" rel="stylesheet">
-    <link href="css/navbar.css?v=20260726" rel="stylesheet">
-    <link href="css/sidebar.css?v=20260726" rel="stylesheet">
-    <link href="css/components.css?v=20260726" rel="stylesheet">
+    <link href="css/variables.css?v=20260727" rel="stylesheet">
+    <link href="css/navbar.css?v=20260727" rel="stylesheet">
+    <link href="css/sidebar.css?v=20260727" rel="stylesheet">
+    <link href="css/components.css?v=20260727" rel="stylesheet">
+    <script>window.__APP_VER__ = '20260727';</script>
 </head>
 <body>
 
@@ -116,6 +117,11 @@
             <div class="top-menus" id="top-dynamic-menus"></div>
             <!-- ⭐️ App Shell 快速還原：在 JS 載入前瞬間填上最後一次的選單，完全消除閃爍 -->
             <script>
+                if (localStorage.getItem("app_shell_ver") !== window.__APP_VER__) {
+                    localStorage.removeItem("app_shell_top_menus");
+                    localStorage.removeItem("app_shell_sidebar_menus");
+                    localStorage.setItem("app_shell_ver", window.__APP_VER__);
+                }
                 var cachedTop = localStorage.getItem("app_shell_top_menus");
                 if (cachedTop) document.getElementById("top-dynamic-menus").innerHTML = cachedTop;
             </script>
@@ -572,9 +578,7 @@
     <div class="modal fade" id="systemAlertModal" tabindex="-1" style="z-index: 1060;"><div class="modal-dialog modal-dialog-centered modal-sm"><div class="modal-content border-0 shadow"><div class="modal-body text-center py-4"><i class="fas fa-info-circle text-info mb-3" style="font-size: 2.5rem;"></i><p class="fs-6 fw-bold mb-0 text-body" id="systemAlertMsg"></p></div><div class="modal-footer justify-content-center border-0 bg-light py-2"><button type="button" class="btn btn-primary btn-sm px-4 fw-bold" data-bs-dismiss="modal">確定</button></div></div></div></div>
     <div class="modal fade" id="systemConfirmModal" tabindex="-1" style="z-index: 1060;"><div class="modal-dialog modal-dialog-centered modal-sm"><div class="modal-content border-0 shadow"><div class="modal-body text-center py-4"><i class="fas fa-exclamation-triangle text-warning mb-3" style="font-size: 2.5rem;"></i><p class="fs-6 fw-bold mb-0 text-body" id="systemConfirmMsg"></p></div><div class="modal-footer justify-content-center border-0 bg-light py-2"><button type="button" class="btn btn-light btn-sm border px-3 fw-bold" data-bs-dismiss="modal" data-i18n="modal_btn_cancel">取消</button><button type="button" class="btn btn-danger btn-sm px-3 fw-bold" id="systemConfirmBtn" onclick="if(window.appState && window.appState.confirmActionCallback) window.appState.confirmActionCallback(); bootstrap.Modal.getInstance(document.getElementById('systemConfirmModal')).hide();">確定</button></div></div></div></div>
 
-    <!-- ⭐️ 快取破解碼：必須在 modals.html fetch 之前定義，否則 ?v= 會是空字串、
-         部署後使用者拿到舊版 modals (Round-7 修)。其他 <script src> 共用此版本碼。 -->
-    <script>window.__APP_VER__ = '20260721b';</script>
+    <!-- ⭐️ 快取破解碼：已移至 <head> 定義，供 App Shell 快取清除邏輯使用。其他 <script src> 共用此版本碼。 -->
 
     <!-- ⭐️ 動態載入 Modals partial (跟 JS 共用同一個 cache-bust 版本碼)
          Round-5 B14：失敗時不再只 console.warn — 顯示明確錯誤 banner，因為沒有 modals 後續所有「新增/編輯」按鈕都會死掉。 -->
@@ -605,28 +609,28 @@
     <script src="appbase.js"></script>
 
     <!-- __APP_VER__ 已在 modals.html fetch 之前定義；以下 <script src> 共用同一版本碼 -->
-    <script type="module" src="js/config.js?v=20260721b"></script>
-    <script type="module" src="js/api.js?v=20260721b"></script>
-    <script type="module" src="js/auth.js?v=20260721b"></script>
+    <script type="module" src="js/config.js?v=20260727"></script>
+    <script type="module" src="js/api.js?v=20260727"></script>
+    <script type="module" src="js/auth.js?v=20260727"></script>
     <!-- ui 模組 (從 ui.js 拆分) -->
-    <script type="module" src="js/ui/theme.js?v=20260726"></script>
-    <script type="module" src="js/ui/layout.js?v=20260721b"></script>
-    <script type="module" src="js/ui/navigation.js?v=20260721b"></script>
-    <script type="module" src="js/ui/dialogs.js?v=20260721b"></script>
+    <script type="module" src="js/ui/theme.js?v=20260727"></script>
+    <script type="module" src="js/ui/layout.js?v=20260727"></script>
+    <script type="module" src="js/ui/navigation.js?v=20260727"></script>
+    <script type="module" src="js/ui/dialogs.js?v=20260727"></script>
     <!-- render 模組 (從 render.js 拆分) -->
-    <script type="module" src="js/render/sidebar.js?v=20260721b"></script>
-    <script type="module" src="js/render/sidebar-item.js?v=20260721b"></script>
-    <script type="module" src="js/render/tables.js?v=20260721b"></script>
-    <script type="module" src="js/render/account-ui.js?v=20260721b"></script>
+    <script type="module" src="js/render/sidebar.js?v=20260727"></script>
+    <script type="module" src="js/render/sidebar-item.js?v=20260727"></script>
+    <script type="module" src="js/render/tables.js?v=20260727"></script>
+    <script type="module" src="js/render/account-ui.js?v=20260727"></script>
     <!-- admin 模組 (從 admin.js 拆分) -->
-    <script type="module" src="js/admin/modal-utils.js?v=20260721b"></script>
-    <script type="module" src="js/admin/fab-manage.js?v=20260721b"></script>
-    <script type="module" src="js/admin/role-manage.js?v=20260721b"></script>
-    <script type="module" src="js/admin/account-manage.js?v=20260721b"></script>
-    <script type="module" src="js/admin/menu-manage.js?v=20260721b"></script>
-    <script type="module" src="js/admin/activity-log.js?v=20260721b"></script>
-    <script type="module" src="js/admin/misc-manage.js?v=20260721b"></script>
-    <script type="module" src="js/main.js?v=20260721b"></script>
+    <script type="module" src="js/admin/modal-utils.js?v=20260727"></script>
+    <script type="module" src="js/admin/fab-manage.js?v=20260727"></script>
+    <script type="module" src="js/admin/role-manage.js?v=20260727"></script>
+    <script type="module" src="js/admin/account-manage.js?v=20260727"></script>
+    <script type="module" src="js/admin/menu-manage.js?v=20260727"></script>
+    <script type="module" src="js/admin/activity-log.js?v=20260727"></script>
+    <script type="module" src="js/admin/misc-manage.js?v=20260727"></script>
+    <script type="module" src="js/main.js?v=20260727"></script>
 
 </body>
 </html>

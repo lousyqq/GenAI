@@ -52,7 +52,7 @@
             <div class="modal-content border-0 shadow-lg">
                 <form id="accForm">
                     <div class="modal-header bg-light border-bottom py-3">
-                        <h5 class="modal-title fw-bold text-dark fs-5">
+                        <h5 class="modal-title fw-bold text-body fs-5">
                             <i class="fas fa-user-cog text-primary me-2"></i>帳號設定
                         </h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -66,7 +66,7 @@
                         <div class="row g-2 mb-3">
                             <div class="col-md-4">
                                 <label class="form-label small fw-bold text-secondary mb-1">工號 <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control form-control-sm bg-light fw-bold text-dark" id="accEmpId" required>
+                                <input type="text" class="form-control form-control-sm bg-light fw-bold text-body" id="accEmpId" required>
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label small fw-bold text-secondary mb-1" data-i18n="name">姓名</label>
@@ -81,7 +81,7 @@
                         <!-- 管理層級獨立一行 (編輯系統 admin 帳號時隱藏整段) -->
                         <div class="mb-3" id="accRoleLevelGroup">
                             <label class="form-label small fw-bold text-secondary mb-1" data-i18n="role_level">管理層級</label>
-                            <select class="form-select form-select-sm border-secondary shadow-sm fw-bold text-dark" id="accRoleLevel" onchange="typeof toggleAccDelegationUI === 'function' ? toggleAccDelegationUI() : null">
+                            <select class="form-select form-select-sm border-secondary shadow-sm fw-bold text-body" id="accRoleLevel" onchange="typeof toggleAccDelegationUI === 'function' ? toggleAccDelegationUI() : null">
                                 <option value="user">User - 無全域設定權限</option>
                                 <option value="admin" class="text-danger">Admin - 最高管理權限</option>
                             </select>
@@ -109,7 +109,7 @@
                                 <div class="form-check mb-2 p-0">
                                     <div class="d-inline-flex align-items-center bg-light border rounded px-2 py-1 shadow-sm">
                                         <input class="form-check-input cursor-pointer m-0 me-2" type="checkbox" id="accCanEditOthers" style="transform: scale(0.9);">
-                                        <label class="form-check-label fw-bold text-dark cursor-pointer small" for="accCanEditOthers" data-i18n="can_edit_others">允許變更他人內容 <span class="text-muted fw-normal ms-1">(若未勾選則只能編輯自己建立的看板)</span></label>
+                                        <label class="form-check-label fw-bold text-body cursor-pointer small" for="accCanEditOthers" data-i18n="can_edit_others">允許變更他人內容 <span class="text-muted fw-normal ms-1">(若未勾選則只能編輯自己建立的看板)</span></label>
                                     </div>
                                 </div>
                                 <label class="form-label text-secondary fw-bold mb-1 small d-block" data-i18n="manage_menu">管理目錄：</label>
@@ -180,7 +180,7 @@
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content border-0 shadow">
                 <div class="modal-header bg-light border-bottom">
-                    <h6 class="modal-title fw-bold text-dark"><i class="fas fa-file-code text-primary me-2"></i><span data-i18n="wp_edit">看板網頁內容配置</span></h6>
+                    <h6 class="modal-title fw-bold text-body"><i class="fas fa-file-code text-primary me-2"></i><span data-i18n="wp_edit">看板網頁內容配置</span></h6>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body py-3">
@@ -401,7 +401,7 @@
                                         <img id="appCurrentIconImg" src="" alt="當前圖示" style="max-width: 56px; max-height: 56px; object-fit: contain;">
                                     </div>
                                     <div>
-                                        <div class="fw-bold text-dark mb-1" style="font-size: 0.95rem;">目前已配置專屬圖示</div>
+                                        <div class="fw-bold text-body mb-1" style="font-size: 0.95rem;">目前已配置專屬圖示</div>
                                         <div class="text-muted" style="font-size: 0.78rem; line-height: 1.4;">若需更換請重新選擇檔案；若要移除圖示請點擊右方垃圾桶</div>
                                     </div>
                                 </div>
@@ -431,7 +431,7 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow">
                 <div class="modal-header bg-light border-bottom">
-                    <h6 class="modal-title fw-bold text-dark"><i class="fas fa-user-edit text-primary me-2"></i>個人選單設定</h6>
+                    <h6 class="modal-title fw-bold text-body"><i class="fas fa-user-edit text-primary me-2"></i>個人選單設定</h6>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body py-3">
@@ -444,7 +444,7 @@
                         <div class="mb-3 p-2 bg-light border rounded">
                             <div class="form-check form-switch m-0">
                                 <input class="form-check-input cursor-pointer" type="checkbox" id="personalMenuVisible">
-                                <label class="form-check-label fw-bold text-dark cursor-pointer small" for="personalMenuVisible">顯示在左側選單</label>
+                                <label class="form-check-label fw-bold text-body cursor-pointer small" for="personalMenuVisible">顯示在左側選單</label>
                             </div>
                         </div>
                         <div class="mb-2">

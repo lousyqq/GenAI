@@ -1,17 +1,17 @@
 // === render/tables.js - 管理表格渲染 (Fab, Role, Account, Webpage, MenuConfig, Apply, Audit, AppGrid) ===
 
-import { getCustomMenus, getDataTableLang, getFabs, getPersonalSettings, getRoles, savePersonalSettings, t } from '../config.js?v=20260719';
+import { getCustomMenus, getDataTableLang, getFabs, getPersonalSettings, getRoles, savePersonalSettings, t } from '../config.js?v=20260727';
 
 
-import { deleteAccount, editAccount } from '../admin/account-manage.js?v=20260607k';
-import { deleteFab, editFab } from '../admin/fab-manage.js?v=20260607k';
-import { deleteMenuNodeItem, deleteWebpageItem, editPersonalMenu, openAddMenuNodeModal, openAddWebpageModal } from '../admin/menu-manage.js?v=20260607k';
-import { handleDragLeave, handleDragOver, handleDragStart, handleDrop } from '../admin/misc-manage.js?v=20260607k';
-import { deleteRole, editRole } from '../admin/role-manage.js?v=20260607k';
-import { getDtPageLen, initDataTable, rememberDtPageLen, renderSidebarMenus, safeDestroyDataTable } from './sidebar.js?v=20260719';
-import { generateIconHtml } from '../ui/dialogs.js?v=20260607k';
-import { getFullMenuPathStr } from '../ui/navigation.js?v=20260719';
-import { appState } from '../store.js?v=20260607k';
+import { deleteAccount, editAccount } from '../admin/account-manage.js?v=20260727';
+import { deleteFab, editFab } from '../admin/fab-manage.js?v=20260727';
+import { deleteMenuNodeItem, deleteWebpageItem, editPersonalMenu, openAddMenuNodeModal, openAddWebpageModal } from '../admin/menu-manage.js?v=20260727';
+import { handleDragLeave, handleDragOver, handleDragStart, handleDrop } from '../admin/misc-manage.js?v=20260727';
+import { deleteRole, editRole } from '../admin/role-manage.js?v=20260727';
+import { getDtPageLen, initDataTable, rememberDtPageLen, renderSidebarMenus, safeDestroyDataTable } from './sidebar.js?v=20260727';
+import { generateIconHtml } from '../ui/dialogs.js?v=20260727';
+import { getFullMenuPathStr } from '../ui/navigation.js?v=20260727';
+import { appState } from '../store.js?v=20260727';
 
 
 // ⚠️ Stored XSS 防護：判斷 URL 是否安全到可以放進 href 或 window.open。

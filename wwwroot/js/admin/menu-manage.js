@@ -1,15 +1,15 @@
 // === admin/menu-manage.js - 個人選單 + 看板管理 + 選單結構樹 ===
 
-import { getCustomMenus, getPersonalSettings, savePersonalSettings, t } from '../config.js?v=20260719';
+import { getCustomMenus, getPersonalSettings, savePersonalSettings, t } from '../config.js?v=20260727';
 
 
-import { getSelectedIconVal, setIconValToModal } from './misc-manage.js?v=20260607k';
-import { hideModalSafely, showModalSafely } from './modal-utils.js?v=20260607k';
-import { batchDeleteMenusAPI, batchSaveMenusAPI, deleteMenuAPI, fetchInitialDataFromDB, saveMenuAPI } from '../api.js?v=20260607k';
-import { renderSidebarMenus } from '../render/sidebar.js?v=20260719';
-import { renderMenuConfigTable, renderPersonalMenuManage, renderWebpageTable } from '../render/tables.js?v=20260719';
-import { customAlert, customConfirm } from '../ui/dialogs.js?v=20260607k';
-import { appState } from '../store.js?v=20260607k';
+import { getSelectedIconVal, setIconValToModal } from './misc-manage.js?v=20260727';
+import { hideModalSafely, showModalSafely } from './modal-utils.js?v=20260727';
+import { batchDeleteMenusAPI, batchSaveMenusAPI, deleteMenuAPI, fetchInitialDataFromDB, saveMenuAPI } from '../api.js?v=20260727';
+import { renderSidebarMenus } from '../render/sidebar.js?v=20260727';
+import { renderMenuConfigTable, renderPersonalMenuManage, renderWebpageTable } from '../render/tables.js?v=20260727';
+import { customAlert, customConfirm } from '../ui/dialogs.js?v=20260727';
+import { appState } from '../store.js?v=20260727';
 
 
 // 共用工具：把 ACL textarea 內容切行、trim、過濾空字串、去重
@@ -334,7 +334,7 @@ window.tbAddFolder = function (container, folderName = '', folderId = '', opts) 
         <div class="d-flex align-items-center mb-2">
             ${handleHtml}
             <i class="fas fa-folder text-warning me-2 fs-5"></i>
-            <input type="text" class="form-control form-control-sm flex-grow-1 border-warning fw-bold text-dark tb-folder-name" value="${window.escapeHTML(folderName)}" placeholder="群組名稱" ${nameEditable ? '' : 'readonly'}>
+            <input type="text" class="form-control form-control-sm flex-grow-1 border-warning fw-bold text-body tb-folder-name" value="${window.escapeHTML(folderName)}" placeholder="群組名稱" ${nameEditable ? '' : 'readonly'}>
             ${removeBtnHtml}
         </div>
         <div class="tb-children ps-4 ms-2 border-start border-warning border-2 pb-1 pt-1" style="min-height: 30px;"></div>

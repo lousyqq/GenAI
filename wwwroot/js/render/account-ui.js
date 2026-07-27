@@ -1,12 +1,12 @@
 // === render/account-ui.js - 帳號 Modal 內部 UI 渲染 ===
 
-import { getCustomMenus, getFabs, getRoles } from '../config.js?v=20260719';
+import { getCustomMenus, getFabs, getRoles } from '../config.js?v=20260727';
 
 
-import { clearDefaultMenu, pickDefaultMenu } from '../admin/account-manage.js?v=20260607k';
-import { generateIconHtml } from '../ui/dialogs.js?v=20260607k';
-import { getFullMenuPathStr } from '../ui/navigation.js?v=20260719';
-import { appState } from '../store.js?v=20260607k';
+import { clearDefaultMenu, pickDefaultMenu } from '../admin/account-manage.js?v=20260727';
+import { generateIconHtml } from '../ui/dialogs.js?v=20260727';
+import { getFullMenuPathStr } from '../ui/navigation.js?v=20260727';
+import { appState } from '../store.js?v=20260727';
 
 
 export function renderAccRoleCheckboxes(selectedIds) {
@@ -45,7 +45,7 @@ export function renderAccRoleCheckboxes(selectedIds) {
         html.push(`
             <div class="form-check form-check-inline border rounded px-3 py-1 bg-white mb-1 shadow-sm" style="border-color: #dee2e6 !important;">
                 <input class="form-check-input ms-0 me-2 acc-role-cb cursor-pointer" type="checkbox" id="acr_${window.escapeHTML(rId)}" value="${window.escapeHTML(rId)}" ${isChecked}>
-                <label class="form-check-label small fw-bold text-dark cursor-pointer" for="acr_${window.escapeHTML(rId)}">${window.escapeHTML(displayName)}</label>
+                <label class="form-check-label small fw-bold text-body cursor-pointer" for="acr_${window.escapeHTML(rId)}">${window.escapeHTML(displayName)}</label>
             </div>
         `);
     });
@@ -121,7 +121,7 @@ export function renderAccManageMenuCheckboxes(selectedIds) {
         html.push(`
             <div class="form-check mb-1 ms-1 d-flex align-items-center">
                 <input class="form-check-input acc-menu-cb cursor-pointer mt-0" type="checkbox" id="acm_${mId}" value="${mId}" ${isChecked}>
-                <label class="form-check-label fw-bold text-dark cursor-pointer d-flex align-items-center ms-2" for="acm_${mId}">
+                <label class="form-check-label fw-bold text-body cursor-pointer d-flex align-items-center ms-2" for="acm_${mId}">
                     <i class="fas fa-folder text-warning me-2 fs-5"></i> ${mDName}
                 </label>
             </div>
@@ -245,7 +245,7 @@ window.renderAccExtraMenuCheckboxes = function () {
         html.push(`
             <div class="form-check d-flex align-items-center">
                 <input class="form-check-input acc-extra-cb cursor-pointer mt-0" type="checkbox" id="acex_${mId}" value="${mId}" ${checked} onchange="window.__accOverrideChanged('extra')">
-                <label class="form-check-label small text-dark cursor-pointer ms-2" for="acex_${mId}" title="${pathStr}">
+                <label class="form-check-label small text-body cursor-pointer ms-2" for="acex_${mId}" title="${pathStr}">
                     <i class="fas fa-file-alt text-secondary me-1 opacity-75"></i>${mName}
                 </label>
             </div>
@@ -283,7 +283,7 @@ window.renderAccDenyMenuCheckboxes = function () {
         html.push(`
             <div class="form-check d-flex align-items-center">
                 <input class="form-check-input acc-deny-cb cursor-pointer mt-0" type="checkbox" id="acdn_${mId}" value="${mId}" ${checked} onchange="window.__accOverrideChanged('deny')">
-                <label class="form-check-label small text-dark cursor-pointer ms-2" for="acdn_${mId}" title="${pathStr}">
+                <label class="form-check-label small text-body cursor-pointer ms-2" for="acdn_${mId}" title="${pathStr}">
                     <i class="fas fa-file-alt text-secondary me-1 opacity-75"></i>${mName}
                 </label>
             </div>
@@ -513,7 +513,7 @@ window.openMenuSelector = function (fabName) {
                 listHtml += `
                     <div class="drawer-item d-flex justify-content-between align-items-center p-2 border-bottom cursor-pointer hover-bg-light" style="transition: all 0.2s;" onclick="pickDefaultMenu('${item.id}'); window.closeMenuSelector();">
                         <div class="pe-2">
-                            <div class="fw-bold text-dark d-flex align-items-center mb-0" style="font-size: 0.85rem;">
+                            <div class="fw-bold text-body d-flex align-items-center mb-0" style="font-size: 0.85rem;">
                                 <i class="fas ${itemIcon} item-icon me-2 opacity-75"></i> ${item.displayName} ${badge}
                             </div>
                             ${subPathHtml}
@@ -531,9 +531,9 @@ window.openMenuSelector = function (fabName) {
                     <div class="drawer-group-title bg-white border rounded shadow-sm p-3 d-flex justify-content-between align-items-center cursor-pointer ${isFirst ? '' : 'collapsed'}" onclick="window.toggleDrawerCollapse(event, 'drawer_col_${index}', this)" aria-expanded="${isFirst ? 'true' : 'false'}">
                         <div class="d-flex align-items-center">
                             <div style="width:24px; text-align:center;" class="me-2">${iconHtml}</div>
-                            <span class="fw-bold text-dark fs-6">${group.rootName}</span>
+                            <span class="fw-bold text-body fs-6">${group.rootName}</span>
                         </div>
-                        <span class="badge bg-white text-dark border border-secondary rounded-pill shadow-sm px-2">${group.items.length}</span>
+                        <span class="badge bg-white text-body border border-secondary rounded-pill shadow-sm px-2">${group.items.length}</span>
                     </div>
                     <div class="collapse ${isFirst ? 'show' : ''}" id="drawer_col_${index}">
                         ${listHtml}

@@ -93,7 +93,7 @@ const i18n = {
     }
 };
 
-import { appState } from './store.js?v=20260607k';
+import { appState } from './store.js?v=20260727';
 
 // =========================================================================
 // ⭐️ 終極資料讀取介面：全面接管舊有的 LocalStorage 函式，強制導向資料庫記憶體 (appState)

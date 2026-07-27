@@ -1,6 +1,6 @@
 // === admin/stats-ui.js — 網站使用率與流量統計儀表板 ===
 // 對應頁面：#page-site-stats
-import { safeDestroyDataTable, initDataTable } from '../render/sidebar.js?v=20260719';
+import { safeDestroyDataTable, initDataTable } from '../render/sidebar.js?v=20260727';
 
 let _currentStatsMode = 'daily'; // 'daily' 或 'monthly'
 let _statsInitialized = false;

@@ -14,21 +14,12 @@ export function initTheme() {
     if (saved === 'dark' || saved === 'light') {
         applyTheme(saved);
     } else {
-        // 首次訪問：偵測系統偏好
-        const prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches;
-        applyTheme(prefersDark ? 'dark' : 'light');
+        // 首次訪問：預設強制為淺色模式 (依使用者要求)
+        applyTheme('light');
     }
     updateToggleIcon();
 
-    // 監聽系統偏好變化（僅在使用者未手動選擇時跟隨）
-    try {
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-            if (!localStorage.getItem(THEME_KEY)) {
-                applyTheme(e.matches ? 'dark' : 'light');
-                updateToggleIcon();
-            }
-        });
-    } catch (_) { /* Safari < 14 不支援 addEventListener on matchMedia */ }
+    // 已經取消系統偏好的自動跟隨，確保使用者體驗一致
 }
 
 /**
@@ -59,7 +50,8 @@ function updateToggleIcon() {
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
     const icon = btn.querySelector('i');
     if (icon) {
-        icon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
+        // 給深淺色切換加上專屬顏色，避免白色的太陽看起來像齒輪
+        icon.className = isDark ? 'fas fa-sun text-warning' : 'fas fa-moon text-secondary';
     }
     btn.title = isDark ? '切換至淺色模式' : '切換至深色模式';
 }

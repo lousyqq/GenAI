@@ -4,8 +4,8 @@
 // 對應頁面：#page-activity-log
 //
 
-import { customAlert, customConfirm } from '../ui/dialogs.js?v=20260607k';
-import { appState } from '../store.js?v=20260607k';
+import { customAlert, customConfirm } from '../ui/dialogs.js?v=20260727';
+import { appState } from '../store.js?v=20260727';
 
 
 window._activityLogPage = 1;
