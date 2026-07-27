@@ -53,7 +53,9 @@ function updateToggleIcon() {
         // 給深淺色切換加上專屬顏色，避免白色的太陽看起來像齒輪
         icon.className = isDark ? 'fas fa-sun text-warning' : 'fas fa-moon text-secondary';
     }
-    btn.title = isDark ? '切換至淺色模式' : '切換至深色模式';
+    const title = isDark ? '切換至淺色模式' : '切換至深色模式';
+    btn.title = title;
+    btn.setAttribute('aria-label', title);
 }
 
 /**

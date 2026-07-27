@@ -261,8 +261,8 @@ export function selectTopMenu(menuId) {
     }, 50);
 }
 
-// ⭐️ 核心修復：點擊啟動特定看板 (加入對 DB 欄位大寫的全面支援)
-export function activateMenu(menuId) {
+// 啟動選單 (包含展開/反白與頁面切換)
+export function activateMenu(menuId, pushState = true) {
     try {
         if (!menuId) {
             // ⭐️ 徹底封殺 page-home 迴圈，不顯示多餘的總覽
@@ -273,7 +273,15 @@ export function activateMenu(menuId) {
         const targetMenu = menus.find(m => window.cleanId(m.id || m.MenuId || m.menuId) === window.cleanId(menuId));
 
         if (!targetMenu) {
-            console.warn("🚨 無法在資料庫找到對應的選單 ID:", menuId);
+            console.warn("🚨 無法在資料庫找到對應的選單 ID 或您無權限訪問:", menuId);
+            
+            // 如果是由 hash route 觸發且找不到，給予提示並退回首頁
+            if (window.location.hash.includes(window.cleanId(menuId))) {
+                alert("您沒有權限訪問此看板，或該看板已不存在。將返回首頁。");
+                history.replaceState(null, '', window.location.pathname);
+                if (typeof window.goDefaultHome === 'function') window.goDefaultHome();
+            }
+            
             // ⭐️ 徹底封殺 page-home 迴圈
             return;
         }
@@ -358,6 +366,14 @@ export function activateMenu(menuId) {
             if (textEl) textEl.innerText = `${dName} 內容建置中`;
             navTo('page-under-construction', targetEl, dName);
         }
+
+        // ⭐️ Deep Linking: 將目前看板的狀態推入網址列 (Hash Routing)
+        if (pushState && menuId) {
+            const cleanM = window.cleanId(menuId);
+            if (location.hash !== '#/menu/' + cleanM) {
+                history.pushState({ menuId: cleanM }, '', '#/menu/' + cleanM);
+            }
+        }
     } catch (error) {
         console.error("🚨 啟動看板時發生錯誤:", error);
     }
@@ -380,6 +396,15 @@ export function openInIE(url) {
     }
 }
 window.openInIE = openInIE;
+
+// 解析 Hash 中的 menuId
+export function getMenuIdFromHash() {
+    const hash = window.location.hash;
+    if (hash.startsWith('#/menu/')) {
+        return hash.replace('#/menu/', '');
+    }
+    return null;
+}
 
 // ⭐️ 對齊 TEST_20260429.html:3496 的預設首頁跳轉（含廠區過濾、folder 自動取第一個子節點）
 export function goDefaultHome() {

@@ -18,19 +18,19 @@
           integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"
           integrity="sha384-iw3OoTErCYJJB9mCa8LNS2hbsQ7M3C0EpIsO/H5+EGAkPGc6rk+V8i04oW/K5xq0" crossorigin="anonymous">
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"
+    <script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"
             integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous"></script>
 
     <!-- DataTables CSS & JS + jQuery -->
     <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet"
           integrity="sha384-5oFfLntNy8kuC2TaebWZbaHTqdh3Q+7PwYbB490gupK0YtTAB7mBJGv4bQl9g9rK" crossorigin="anonymous">
-    <script src="https://code.jquery.com/jquery-3.7.0.min.js"
+    <script defer src="https://code.jquery.com/jquery-3.7.0.min.js"
             integrity="sha384-NXgwF8Kv9SSAr+jemKKcbvQsz+teULH/a5UNJvZc6kP47hZgl62M1vGnw6gHQhb1" crossorigin="anonymous"></script>
-    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"
+    <script defer src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"
             integrity="sha384-k5vbMeKHbxEZ0AEBTSdR7UjAgWCcUfrS8c0c5b2AfIh7olfhNkyCZYwOfzOQhauK" crossorigin="anonymous"></script>
-    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"
+    <script defer src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"
             integrity="sha384-PgPBH0hy6DTJwu7pTf6bkRqPlf/+pjUBExpr/eIfzszlGYFlF9Wi9VTAJODPhgCO" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+    <script defer src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
             integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
 
     <!-- CSS 模組 (從 style.css 拆分) -->
@@ -91,11 +91,11 @@
                 </button>
                 <div class="util-divider"></div>
 
-                <button id="btn-theme-toggle" class="util-item" onclick="toggleTheme()" title="切換深色/淺色模式">
+                <button id="btn-theme-toggle" class="util-item" onclick="toggleTheme()" title="切換深色/淺色模式" aria-label="切換深色/淺色模式">
                     <i class="fas fa-moon"></i>
                 </button>
 
-                <button id="btn-system-settings" class="util-item" onclick="selectTopMenu('system_settings')" title="系統設定">
+                <button id="btn-system-settings" class="util-item" onclick="selectTopMenu('system_settings')" title="系統設定" aria-label="系統設定">
                     <i class="fas fa-cog" style="font-size: 0.95rem;"></i>
                 </button>
 
@@ -375,32 +375,22 @@
                     </div>
                     <div class="card border-0 shadow-sm">
                         <div class="card-body p-3">
-                            <style>
-                                /* 保險起見的樣式 */
-                                #activity-log-table thead th {
-                                    position: sticky !important;
-                                    top: 0 !important;
-                                    z-index: 1020 !important;
-                                    background-color: var(--table-header-bg) !important;
-                                    box-shadow: inset 0 -2px 0 var(--table-border) !important;
-                                }
-                            </style>
                             <div class="table-responsive border rounded" style="max-height: 65vh; overflow-y: auto;">
                                 <table id="activity-log-table" class="table table-sm table-hover align-middle text-nowrap mb-0">
                                     <thead class="table-light">
                                         <tr>
-                                            <th style="width:140px; position: sticky; top: 0; z-index: 1020;">時間</th>
-                                            <th style="width:90px; position: sticky; top: 0; z-index: 1020;">工號</th>
-                                            <th style="width:110px; position: sticky; top: 0; z-index: 1020;">姓名</th>
-                                            <th style="width:65px; position: sticky; top: 0; z-index: 1020;">來源</th>
-                                            <th style="width:90px; position: sticky; top: 0; z-index: 1020;">分類</th>
-                                            <th style="position: sticky; top: 0; z-index: 1020;">動作</th>
-                                            <th style="width:60px; position: sticky; top: 0; z-index: 1020;">方法</th>
-                                            <th style="position: sticky; top: 0; z-index: 1020;">Path</th>
-                                            <th style="width:60px; position: sticky; top: 0; z-index: 1020;">狀態</th>
-                                            <th style="width:70px; position: sticky; top: 0; z-index: 1020;">耗時(ms)</th>
-                                            <th style="width:120px; position: sticky; top: 0; z-index: 1020;">IP</th>
-                                            <th class="text-start" style="position: sticky; top: 0; z-index: 1020;">詳情</th>
+                                            <th class="sticky-th" style="width:140px;">時間</th>
+                                            <th class="sticky-th" style="width:90px;">工號</th>
+                                            <th class="sticky-th" style="width:110px;">姓名</th>
+                                            <th class="sticky-th" style="width:65px;">來源</th>
+                                            <th class="sticky-th" style="width:90px;">分類</th>
+                                            <th class="sticky-th">動作</th>
+                                            <th class="sticky-th" style="width:60px;">方法</th>
+                                            <th class="sticky-th">Path</th>
+                                            <th class="sticky-th" style="width:60px;">狀態</th>
+                                            <th class="sticky-th" style="width:70px;">耗時(ms)</th>
+                                            <th class="sticky-th" style="width:120px;">IP</th>
+                                            <th class="sticky-th text-start">詳情</th>
                                         </tr>
                                     </thead>
                                     <tbody id="activityLogBody"><tr><td colspan="12" class="text-center text-muted py-4">尚未載入</td></tr></tbody>
@@ -608,28 +598,7 @@
          IIS 子目錄部署時就自動帶到正確位置。 -->
     <script src="appbase.js"></script>
 
-    <!-- __APP_VER__ 已在 modals.html fetch 之前定義；以下 <script src> 共用同一版本碼 -->
-    <script type="module" src="js/config.js?v=20260727"></script>
-    <script type="module" src="js/api.js?v=20260727"></script>
-    <script type="module" src="js/auth.js?v=20260727"></script>
-    <!-- ui 模組 (從 ui.js 拆分) -->
-    <script type="module" src="js/ui/theme.js?v=20260727"></script>
-    <script type="module" src="js/ui/layout.js?v=20260727"></script>
-    <script type="module" src="js/ui/navigation.js?v=20260727"></script>
-    <script type="module" src="js/ui/dialogs.js?v=20260727"></script>
-    <!-- render 模組 (從 render.js 拆分) -->
-    <script type="module" src="js/render/sidebar.js?v=20260727"></script>
-    <script type="module" src="js/render/sidebar-item.js?v=20260727"></script>
-    <script type="module" src="js/render/tables.js?v=20260727"></script>
-    <script type="module" src="js/render/account-ui.js?v=20260727"></script>
-    <!-- admin 模組 (從 admin.js 拆分) -->
-    <script type="module" src="js/admin/modal-utils.js?v=20260727"></script>
-    <script type="module" src="js/admin/fab-manage.js?v=20260727"></script>
-    <script type="module" src="js/admin/role-manage.js?v=20260727"></script>
-    <script type="module" src="js/admin/account-manage.js?v=20260727"></script>
-    <script type="module" src="js/admin/menu-manage.js?v=20260727"></script>
-    <script type="module" src="js/admin/activity-log.js?v=20260727"></script>
-    <script type="module" src="js/admin/misc-manage.js?v=20260727"></script>
+    <!-- 模組化入口 -->
     <script type="module" src="js/main.js?v=20260727"></script>
 
 </body>

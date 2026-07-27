@@ -153,6 +153,18 @@
         background-color: var(--table-row-hover) !important;
     }
 
+/* === 表格與 Sticky Header === */
+.sticky-th {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 1020 !important;
+}
+
+#activity-log-table thead th {
+    background-color: var(--table-header-bg) !important;
+    box-shadow: inset 0 -2px 0 var(--table-border) !important;
+}
+
 .badge {
     border-radius: 4px !important;
     padding: 4px 10px !important;

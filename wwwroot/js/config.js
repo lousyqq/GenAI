@@ -109,7 +109,12 @@ export function getPersonalSettings(empId) {
     try { return JSON.parse(localStorage.getItem('umc_personal_menus_' + empId)) || {}; }
     catch (e) { return {}; }
 }
+let isSavingPersonalSettings = false;
+
 export async function savePersonalSettings(empId, data) {
+    if (isSavingPersonalSettings) return false;
+    isSavingPersonalSettings = true;
+
     // 將個人設定轉換為後端 API 預期的 List<PersonalSettingDto> 格式
     const payload = [];
     for (let menuId in data) {
@@ -142,6 +147,8 @@ export async function savePersonalSettings(empId, data) {
     } catch (e) {
         console.error("儲存個人選單失敗:", e);
         return false;
+    } finally {
+        isSavingPersonalSettings = false;
     }
 }
 

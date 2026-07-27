@@ -2,6 +2,7 @@ import { appState } from './store.js?v=20260727';
 import './config.js?v=20260727';
 import './api.js?v=20260727';
 import './auth.js?v=20260727';
+import './ui/theme.js?v=20260727';
 import './ui/layout.js?v=20260727';
 import './ui/navigation.js?v=20260727';
 import './ui/dialogs.js?v=20260727';
@@ -42,7 +43,16 @@ export function initDashboardUI(stayOnCurrentPage = false) {
     if (typeof renderHomeDashboard === 'function') renderHomeDashboard();
     if (typeof switchLayoutMode === 'function') switchLayoutMode('system');
     if (!stayOnCurrentPage) {
-        if (typeof window.goDefaultHome === 'function') window.goDefaultHome();
+        if (typeof window.getMenuIdFromHash === 'function') {
+            const hashId = window.getMenuIdFromHash();
+            if (hashId && typeof window.activateMenu === 'function') {
+                window.activateMenu(hashId, false); // false = 不要再 pushState 一次
+            } else if (typeof window.goDefaultHome === 'function') {
+                window.goDefaultHome();
+            }
+        } else if (typeof window.goDefaultHome === 'function') {
+            window.goDefaultHome();
+        }
     }
     if (typeof window.pingSiteVisitor === 'function') {
         setTimeout(() => window.pingSiteVisitor(), 1500);
@@ -210,6 +220,16 @@ document.addEventListener('click', function(e) {
     if (addAppBtn) {
         if (typeof window.openAppGridModal === 'function') window.openAppGridModal();
         return;
+    }
+});
+
+// ⭐️ 監聽瀏覽器上一頁/下一頁事件 (Deep Linking)
+window.addEventListener('popstate', (e) => {
+    if (e.state && e.state.menuId) {
+        if (typeof window.activateMenu === 'function') window.activateMenu(e.state.menuId, false);
+    } else {
+        // 退回到沒有 state 的地方，表示回到首頁
+        if (typeof window.goDefaultHome === 'function') window.goDefaultHome();
     }
 });
 

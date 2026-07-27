@@ -649,9 +649,13 @@ window.setupSidebarSearch = function () {
     // 語系感知的 placeholder（changeLanguage 會重繪側邊欄，再次經過這裡不會重綁但仍刷新 placeholder）
     try { input.placeholder = t('search_placeholder', '搜尋看板…'); } catch (e) { }
 
+    let debounceTimer;
     const doFilter = () => {
         if (clearBtn) clearBtn.style.display = input.value ? 'flex' : 'none';
-        filterSidebarMenus(input.value);
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+            filterSidebarMenus(input.value);
+        }, 250); // 250ms 防抖，提升連續輸入的效能
     };
     const reset = () => {
         input.value = '';
