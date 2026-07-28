@@ -1,4 +1,4 @@
-// === auth.js - 雙模式登入流程：Windows 自動偵測 + 手動帳密 ===
+﻿// === auth.js - 雙模式登入流程：Windows 自動偵測 + 手動帳密 ===
 // 公開全域：
 //   window.tryAutoLogin()    - 主流程進入點 (main.js DOMContentLoaded 會呼叫)
 //   window.doWindowsLogin()  - 「以此身份進入」按鈕
@@ -6,11 +6,11 @@
 //   window.retryWhoAmI()     - 「重試偵測」按鈕
 //   window.logout()          - 右上頭像下拉的登出
 
-import { getAccounts } from './config.js?v=20260727';
-import { fetchInitialDataFromDB } from './api.js?v=20260727';
-import { initDashboardUI, restoreLoginFromStorage } from './main.js?v=20260727';
-import { customAlert } from './ui/dialogs.js?v=20260727';
-import { appState } from './store.js?v=20260727';
+import { getAccounts } from './config.js?v=20260728';
+import { fetchInitialDataFromDB } from './api.js?v=20260728';
+import { initDashboardUI, restoreLoginFromStorage } from './main.js?v=20260728';
+import { customAlert } from './ui/dialogs.js?v=20260728';
+import { appState } from './store.js?v=20260728';
 
 
 // 「使用者主動登出 → 別再自動登入」旗標

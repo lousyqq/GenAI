@@ -8,7 +8,7 @@ Write-Host "Target Directory: $targetDir"
 
 $count = 0
 Get-ChildItem -Path $targetDir -Recurse -Include *.html, *.js | ForEach-Object {
-    $content = Get-Content $_.FullName -Raw
+    $content = [System.IO.File]::ReadAllText($_.FullName, [System.Text.Encoding]::UTF8)
     $modified = $false
 
     # 1. Replace ?v=xxxx
@@ -26,7 +26,7 @@ Get-ChildItem -Path $targetDir -Recurse -Include *.html, *.js | ForEach-Object {
     }
 
     if ($modified) {
-        Set-Content -Path $_.FullName -Value $content -Encoding UTF8
+        [System.IO.File]::WriteAllText($_.FullName, $content, [System.Text.Encoding]::UTF8)
         Write-Host "Updated: $($_.Name)" -ForegroundColor Green
         $count++
     }

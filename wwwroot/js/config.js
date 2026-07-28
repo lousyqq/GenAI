@@ -1,4 +1,4 @@
-// === 資料庫 / LocalStorage 鍵值常數 (已棄用 LocalStorage，僅留作常數參考) ===
+﻿// === 資料庫 / LocalStorage 鍵值常數 (已棄用 LocalStorage，僅留作常數參考) ===
 const DB_MENUS = 'umc_menus_v1';
 const DB_FABS = 'umc_fabs_v1';
 const DB_ROLES = 'umc_roles_v1';
@@ -93,7 +93,7 @@ const i18n = {
     }
 };
 
-import { appState } from './store.js?v=20260727';
+import { appState } from './store.js?v=20260728';
 
 // =========================================================================
 // ⭐️ 終極資料讀取介面：全面接管舊有的 LocalStorage 函式，強制導向資料庫記憶體 (appState)

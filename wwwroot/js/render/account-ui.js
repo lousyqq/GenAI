@@ -1,12 +1,12 @@
-// === render/account-ui.js - 帳號 Modal 內部 UI 渲染 ===
+﻿// === render/account-ui.js - 帳號 Modal 內部 UI 渲染 ===
 
-import { getCustomMenus, getFabs, getRoles } from '../config.js?v=20260727';
+import { getCustomMenus, getFabs, getRoles } from '../config.js?v=20260728';
 
 
-import { clearDefaultMenu, pickDefaultMenu } from '../admin/account-manage.js?v=20260727';
-import { generateIconHtml } from '../ui/dialogs.js?v=20260727';
-import { getFullMenuPathStr } from '../ui/navigation.js?v=20260727';
-import { appState } from '../store.js?v=20260727';
+import { clearDefaultMenu, pickDefaultMenu } from '../admin/account-manage.js?v=20260728';
+import { generateIconHtml } from '../ui/dialogs.js?v=20260728';
+import { getFullMenuPathStr } from '../ui/navigation.js?v=20260728';
+import { appState } from '../store.js?v=20260728';
 
 
 export function renderAccRoleCheckboxes(selectedIds) {

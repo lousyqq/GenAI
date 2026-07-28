@@ -1,9 +1,9 @@
-// === render/sidebar.js - 側邊欄選單渲染 ===
+﻿// === render/sidebar.js - 側邊欄選單渲染 ===
 // ====== render.js 最上方的修復 ======
-import { getCustomMenus, getDataTableLang, getFabs, getPersonalSettings, getRoles, t } from '../config.js?v=20260727';
-import { generateSidebarMenuItem } from './sidebar-item.js?v=20260727';
-import { navTo, selectTopMenu } from '../ui/navigation.js?v=20260727';
-import { appState } from '../store.js?v=20260727';
+import { getCustomMenus, getDataTableLang, getFabs, getPersonalSettings, getRoles, t } from '../config.js?v=20260728';
+import { generateSidebarMenuItem } from './sidebar-item.js?v=20260728';
+import { navTo, selectTopMenu } from '../ui/navigation.js?v=20260728';
+import { appState } from '../store.js?v=20260728';
 
 
 window.cleanId = function (id) {

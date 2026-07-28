@@ -1,11 +1,11 @@
-// === admin/activity-log.js — 操作紀錄查詢頁 (admin only) ===
+﻿// === admin/activity-log.js — 操作紀錄查詢頁 (admin only) ===
 //
 // 對應後端：GET /api/ActivityLogs   DELETE /api/ActivityLogs/Purge?days=N
 // 對應頁面：#page-activity-log
 //
 
-import { customAlert, customConfirm } from '../ui/dialogs.js?v=20260727';
-import { appState } from '../store.js?v=20260727';
+import { customAlert, customConfirm } from '../ui/dialogs.js?v=20260728';
+import { appState } from '../store.js?v=20260728';
 
 
 window._activityLogPage = 1;
